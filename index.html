@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>帮你选</title>
+<meta name="theme-color" content="#15152c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="帮你选">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<!-- 离线版本：不使用外网字体，改用系统自带中英文字体 -->
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #15152c;
+    --surface: #24244a;
+    --surface2: #1d1d3d;
+    --input: #12122a;
+    --gold: #E8C547;
+    --gold2: #ffd76e;
+    --accent: #7B68EE;
+    --accent2: #9d8bff;
+    --pink: #E85D75;
+    --teal: #4ECDC4;
+    --text: #EFEFFF;
+    --muted: #8d8db0;
+    --border: #32325c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scrollbar-color: #3a3a66 #14142a; }
+  body {
+    background:
+      radial-gradient(70% 45% at 50% -8%, rgba(123,104,238,.20), transparent 62%),
+      radial-gradient(55% 40% at 12% 108%, rgba(78,205,196,.09), transparent 60%),
+      linear-gradient(180deg, #141430 0%, #181832 45%, #13132a 100%);
+    color: var(--text);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(38% 28% at 88% 12%, rgba(232,197,71,.08), transparent 65%),
+      radial-gradient(30% 24% at 10% 60%, rgba(123,104,238,.10), transparent 70%);
+    pointer-events: none;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes popIn { from { transform: scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes diceIn { from { transform: scale(.4) rotate(-18deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+  .opt-name.shake { animation: shake .35s ease; border-color: var(--pink) !important; box-shadow: 0 0 0 3px rgba(232,93,117,.18) !important; }
+  ::selection { background: rgba(232,197,71,.28); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #3a3a66; border-radius: 8px; border: 2px solid #14142a; }
+  ::-webkit-scrollbar-thumb:hover { background: #4a4a7e; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  input { font-family: inherit; }
+  input::placeholder { color: var(--muted); }
+  input:focus { outline: none; }
+  button { font-family: inherit; }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .header { padding: 44px 24px 0; text-align: center; animation: fadeUp .5s ease; }
+  .header h1 {
+    font-size: 40px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px;
+    background: linear-gradient(120deg, #fff 10%, var(--gold2) 45%, var(--gold) 62%, var(--accent2) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .header h1 span {
+    background: linear-gradient(120deg, var(--gold), var(--gold2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .header p { color: var(--muted); font-size: 14px; letter-spacing: .04em; }
+  .lang-btn { margin-top: 10px; padding: 5px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--accent2); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .18s; }
+  .lang-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; padding: 28px 24px 0; }
+  .tab {
+    padding: 9px 22px; border-radius: 999px; border: 1px solid transparent;
+    background: rgba(36,36,74,.55); color: var(--muted); font-weight: 600; cursor: pointer;
+    font-size: 14.5px; transition: all .22s ease; backdrop-filter: blur(6px);
+  }
+  .tab:hover { color: var(--text); background: rgba(46,46,92,.8); border-color: var(--border); transform: translateY(-1px); }
+  .tab.active {
+    background: linear-gradient(135deg, var(--accent), #5b4bd6 60%, var(--accent2));
+    color: #fff; border-color: transparent;
+    box-shadow: 0 6px 18px rgba(123,104,238,.35), inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .main { flex: 1; padding: 34px 24px 60px; }
+  .mode { display: none; }
+  .mode.active { display: flex; flex-direction: column; align-items: center; gap: 22px; animation: fadeUp .35s ease; }
+
+  /* Wheel */
+  .wheel-wrap { position: relative; padding: 14px; }
+  .wheel-wrap::before {
+    content: ""; position: absolute; inset: 9px; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from 0deg, var(--gold), var(--accent), var(--teal), var(--pink), var(--gold));
+    filter: blur(12px); opacity: .5;
+  }
+  .wheel-wrap::after {
+    content: ""; position: absolute; inset: 9px; border-radius: 50%;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.05), 0 24px 50px rgba(0,0,0,.5);
+  }
+  canvas { display: block; position: relative; z-index: 1; width: 320px; max-width: 100%; height: auto; cursor: pointer; }
+  .result {
+    font-size: 30px; font-weight: 800; text-align: center;
+    background: linear-gradient(120deg, var(--gold2), var(--gold) 55%, #ffb84d);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 4px 14px rgba(232,197,71,.35));
+    animation: fadeUp .4s ease;
+  }
+  .hint { color: var(--muted); font-size: 14px; }
+  .input-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
+  .input-row input, .record-bar input {
+    flex: 1; min-width: 0; padding: 11px 16px; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--input); color: var(--text); font-size: 15px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .input-row input:focus, .record-bar input:focus, .card input:focus, .score-table input:focus, .fate-opts input:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(123,104,238,.22);
+  }
+  .input-row button {
+    padding: 11px 18px; border-radius: 12px; border: none;
+    background: linear-gradient(135deg, var(--accent), #5b4bd6);
+    color: #fff; font-weight: 600; cursor: pointer; font-size: 16px;
+    box-shadow: 0 5px 14px rgba(123,104,238,.3); transition: all .18s;
+  }
+  .input-row button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(123,104,238,.42); }
+  .input-row button:active { transform: translateY(0); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; max-width: 360px; justify-content: center; }
+  .chip {
+    background: linear-gradient(180deg, var(--surface), var(--surface2));
+    border: 1px solid var(--border); border-radius: 999px; padding: 5px 13px; font-size: 13px;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    animation: popIn .25s ease;
+  }
+  .chip:hover { border-color: #4a4a7e; }
+  .chip button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0; transition: all .15s; }
+  .chip button:hover { color: var(--pink); transform: scale(1.15); }
+
+  /* Weigh */
+  .weigh { max-width: 700px; margin: 0 auto; width: 100%; gap: 22px; }
+  .weigh-q {
+    font-size: 19px; font-weight: 600; text-align: center; background: transparent;
+    border: none; border-bottom: 1px dashed var(--border); color: var(--text);
+    width: 100%; padding: 8px; font-family: inherit; transition: border-color .2s;
+  }
+  .weigh-q:focus { outline: none; border-bottom-color: var(--accent); }
+  .weigh-q::placeholder { color: var(--muted); }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cards.three { grid-template-columns: 1fr 1fr 1fr; }
+  .cards.four { grid-template-columns: 1fr 1fr; }
+  .card {
+    background: linear-gradient(180deg, var(--surface), var(--surface2));
+    border-radius: 16px; padding: 18px; border: 1.5px solid var(--border);
+    box-shadow: 0 10px 26px rgba(0,0,0,.28);
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .card:hover { transform: translateY(-2px); border-color: #44447a; }
+  .card.winner { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 12px 32px rgba(232,197,71,.18); }
+  .card input[type="text"], .score-table input, .fate-opts input {
+    padding: 9px 12px; border-radius: 10px; border: 1px solid transparent;
+    background: var(--input); color: var(--text); font-size: 14px; width: 100%;
+    font-family: inherit; transition: border-color .2s, box-shadow .2s;
+  }
+  .card input[type="text"]:focus, .score-table input:focus, .fate-opts input:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(123,104,238,.2);
+  }
+  .opt-name-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
+  .card .opt-name { font-weight: 700; font-size: 15px; flex: 1; min-width: 0; }
+  .suggest-btn {
+    flex: none; width: 36px; height: 36px; border-radius: 10px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), #8a6ff0); color: #fff; font-size: 15px;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(123,104,238,.35); transition: all .18s;
+  }
+  .suggest-btn:hover { transform: translateY(-1px) scale(1.07); box-shadow: 0 7px 18px rgba(123,104,238,.55); }
+  .suggest-btn:active { transform: scale(.92); }
+  .del-opt {
+    flex: none; width: 36px; height: 36px; border-radius: 10px; border: none; cursor: pointer;
+    background: rgba(232,93,117,.1); color: var(--pink); font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center; transition: all .18s;
+  }
+  .del-opt:hover { background: rgba(232,93,117,.24); transform: translateY(-1px) scale(1.07); }
+  .del-opt:active { transform: scale(.92); }
+  .label-pro { font-size: 12px; color: var(--accent2); margin-bottom: 6px; font-weight: 700; letter-spacing: .06em; }
+  .label-con { font-size: 12px; color: var(--pink); margin-bottom: 6px; font-weight: 700; letter-spacing: .06em; }
+  .list-row { display: flex; gap: 4px; margin-bottom: 4px; }
+  .list-row input { font-size: 13px !important; padding: 7px 10px; }
+  .list-row button {
+    padding: 4px 10px; border-radius: 8px; border: none;
+    background: rgba(232,93,117,.12); color: var(--pink); cursor: pointer; font-size: 13px; transition: background .15s;
+  }
+  .list-row button:hover { background: rgba(232,93,117,.25); }
+  .add-btn, .btn-add-opt {
+    padding: 6px 14px; border-radius: 9px; border: 1px dashed #4a4a78;
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; transition: all .18s;
+  }
+  .add-btn:hover, .btn-add-opt:hover { color: var(--text); border-color: var(--accent); background: rgba(123,104,238,.1); }
+  .score { margin-top: 12px; text-align: center; font-size: 22px; font-weight: 800; }
+  .weigh-actions { display: flex; gap: 10px; justify-content: center; }
+  .btn-weigh, .btn-shuffle {
+    padding: 12px 32px; border-radius: 999px; border: none;
+    background: linear-gradient(135deg, var(--gold2), var(--gold) 55%, #f0b545);
+    color: #231a02; font-weight: 800; cursor: pointer; font-size: 15.5px;
+    box-shadow: 0 8px 22px rgba(232,197,71,.32), inset 0 1px 0 rgba(255,255,255,.5);
+    transition: all .2s;
+  }
+  .btn-weigh:hover, .btn-shuffle:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(232,197,71,.45); }
+  .btn-weigh:active, .btn-shuffle:active:not(:disabled) { transform: translateY(0); }
+  .btn-shuffle:disabled { background: #2a2a50; color: var(--muted); cursor: wait; box-shadow: none; }
+  .weigh-result {
+    text-align: center; font-size: 24px; font-weight: 800;
+    background: linear-gradient(120deg, var(--gold2), var(--gold));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 4px 16px rgba(232,197,71,.3));
+    animation: fadeUp .4s ease;
+  }
+  .weigh-tie { text-align: center; font-size: 18px; color: var(--muted); }
+
+  /* Shuffle */
+  .cat-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .cat-btn {
+    padding: 8px 20px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted); font-weight: 600; cursor: pointer;
+    font-size: 14px; transition: all .2s;
+  }
+  .cat-btn:hover { color: var(--text); border-color: #4a4a7e; transform: translateY(-1px); }
+  .cat-btn.active {
+    background: linear-gradient(135deg, var(--accent), #5b4bd6);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 6px 16px rgba(123,104,238,.35);
+  }
+  .shuffle-display { min-height: 120px; display: flex; align-items: center; justify-content: center; }
+  .shuffle-pick {
+    font-size: 38px; font-weight: 800; text-align: center; letter-spacing: .01em;
+    transition: all .3s; text-shadow: 0 6px 24px rgba(0,0,0,.4);
+  }
+  .shuffle-pick.flash { color: var(--gold2); text-shadow: 0 0 24px rgba(232,197,71,.75), 0 4px 12px rgba(0,0,0,.4); }
+  .shuffle-empty { color: var(--muted); font-size: 16px; }
+
+  /* Records */
+  .record-bar { display: flex; gap: 8px; width: 100%; max-width: 560px; margin: 22px auto 0; padding: 0 24px; }
+  .record-bar button {
+    padding: 10px 16px; border-radius: 11px; border: 1px solid var(--border); cursor: pointer;
+    font-size: 13px; font-weight: 600; background: var(--surface); color: var(--text);
+    transition: all .18s;
+  }
+  .record-bar button:hover { border-color: #4a4a7e; transform: translateY(-1px); }
+  .record-bar #record-save {
+    background: linear-gradient(135deg, var(--accent), #5b4bd6); color: #fff; border-color: transparent;
+    box-shadow: 0 5px 14px rgba(123,104,238,.3);
+  }
+  .record-msg { max-width: 560px; margin: 8px auto 0; padding: 0 24px; font-size: 13px; }
+  .record-msg.ok { color: #5fe0a8; }
+  .record-msg.err { color: var(--pink); }
+  .record-box {
+    max-width: 560px; margin: 14px auto 0; padding: 14px 16px 16px;
+    background: linear-gradient(180deg, var(--surface), var(--surface2));
+    border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 14px 34px rgba(0,0,0,.35);
+    animation: fadeUp .3s ease;
+  }
+  .record-box-head { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .record-box-head button {
+    padding: 5px 12px; border-radius: 8px; border: none; font-size: 12px; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), #5b4bd6); color: #fff;
+    box-shadow: 0 4px 10px rgba(123,104,238,.3); transition: all .15s;
+  }
+  .record-box-head button:hover { transform: translateY(-1px); }
+  .record-box-head #record-close { background: var(--input); color: var(--muted); margin-left: auto; box-shadow: none; }
+  .record-code {
+    margin-top: 10px; font-family: Consolas, Menlo, monospace; font-size: 13px;
+    color: var(--gold); word-break: break-all; line-height: 1.6;
+    background: rgba(10,10,24,.6); border: 1px solid #2c2c52;
+    padding: 12px; border-radius: 10px; user-select: all;
+  }
+  .record-hist { max-width: 560px; margin: 18px auto 0; padding: 0 24px; }
+  .record-hist-head { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .record-hist-head #record-count { color: var(--gold); }
+  .record-hist-head #record-clear {
+    margin-left: auto; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border);
+    cursor: pointer; font-size: 11px; background: transparent; color: var(--muted); transition: all .15s;
+  }
+  .record-hist-head #record-clear:hover { color: var(--pink); border-color: var(--pink); }
+  .record-item {
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(180deg, var(--surface), var(--surface2));
+    border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; margin-bottom: 7px;
+    transition: border-color .15s;
+  }
+  .record-item:hover { border-color: #4a4a7e; }
+  .record-meta { display: flex; flex-direction: column; font-size: 11px; color: var(--muted); gap: 2px; min-width: 130px; }
+  .record-code-sm { font-size: 11px; color: #8f8fb8; word-break: break-all; }
+  .record-acts { margin-left: auto; display: flex; gap: 6px; }
+  .record-acts button {
+    padding: 4px 11px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer;
+    font-size: 12px; background: transparent; color: var(--accent2); transition: all .15s;
+  }
+  .record-acts button:hover { border-color: var(--accent); background: rgba(123,104,238,.12); }
+  .record-acts button:last-child { color: var(--pink); }
+  .record-acts button:last-child:hover { border-color: var(--pink); background: rgba(232,93,117,.1); }
+
+  /* Versus */
+  .vs-empty { color: var(--muted); font-size: 15px; text-align: center; padding: 24px 0; }
+  .vs-round { text-align: center; color: var(--muted); font-size: 14px; }
+  .vs-hint { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 2px; }
+  .vs-bye { text-align: center; color: var(--gold); font-size: 14px; padding: 6px 0 2px; text-shadow: 0 0 18px rgba(232,197,71,.4); }
+  .vs-duel { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 420px; }
+  .vs-card {
+    padding: 26px 18px; border-radius: 16px; border: 1.5px solid var(--border);
+    background: linear-gradient(180deg, var(--surface), var(--surface2));
+    color: var(--text); font-size: 21px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 10px 26px rgba(0,0,0,.3);
+    transition: all .2s;
+  }
+  .vs-card:hover, .vs-card:active {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, #2e2e5e, #282852);
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(123,104,238,.3), 0 0 0 1px rgba(123,104,238,.5);
+  }
+  .vs-card:active { transform: translateY(0) scale(.985); }
+  .vs-win {
+    font-size: 38px; font-weight: 800; text-align: center;
+    background: linear-gradient(120deg, var(--gold2), var(--gold) 55%, #ffb84d);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 6px 18px rgba(232,197,71,.4));
+    animation: fadeUp .4s ease;
+  }
+  .vs-sub { text-align: center; color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+  /* Score */
+  .score-table-wrap { width: 100%; max-width: 640px; overflow-x: auto; padding-bottom: 4px; }
+  .score-table { border-collapse: separate; border-spacing: 7px; width: 100%; min-width: 400px; }
+  .score-table th, .score-table td {
+    background: linear-gradient(180deg, var(--surface), var(--surface2));
+    border-radius: 12px; padding: 9px; text-align: center; vertical-align: middle;
+  }
+  .score-table input.num { width: 48px; }
+  .score-crit-cell { display: flex; flex-direction: column; gap: 6px; min-width: 84px; }
+  .score-crit-meta { display: flex; align-items: center; justify-content: center; gap: 4px; color: var(--muted); font-size: 12px; }
+  .score-crit-meta button, .score-del-opt {
+    background: rgba(232,93,117,.12); color: var(--pink);
+    border: none; border-radius: 7px; cursor: pointer; padding: 2px 9px; font-size: 13px; transition: background .15s;
+  }
+  .score-crit-meta button:hover, .score-del-opt:hover { background: rgba(232,93,117,.25); }
+  .opt-cell { display: flex; align-items: center; gap: 6px; min-width: 96px; }
+  .score-tot { font-size: 19px; font-weight: 800; color: var(--muted); }
+  .score-tot.low { color: var(--muted); }
+  .score-table tr.winner-row td {
+    outline: 1.5px solid var(--gold); outline-offset: -1.5px;
+    background: linear-gradient(180deg, rgba(232,197,71,.10), rgba(232,197,71,.04));
+  }
+  .score-table tr.winner-row .score-tot {
+    background: linear-gradient(120deg, var(--gold2), var(--gold));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  #score-result { min-height: 32px; text-align: center; font-size: 21px; font-weight: 800; }
+  .score-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  /* Fate */
+  .fate-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .fate-dice { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .fate-dice { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; perspective: 800px; min-height: 96px; align-items: center; }
+  .die-slot { width: 78px; height: 78px; transform-style: preserve-3d; }
+  .die-cube { position: relative; width: 78px; height: 78px; transform-style: preserve-3d; }
+  .die-face {
+    position: absolute; inset: 0; border-radius: 14px;
+    background: linear-gradient(150deg, #fffdf4, #e8e3d4);
+    border: 3px solid #191713;
+    box-shadow: inset 0 -4px 8px rgba(40,34,20,.22), inset 0 2px 3px rgba(255,255,255,.9);
+    display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+    padding: 11px; backface-visibility: hidden;
+  }
+  .die-face.f1 { transform: translateZ(39px); }
+  .die-face.f2 { transform: rotateX(90deg) translateZ(39px); }
+  .die-face.f3 { transform: rotateY(90deg) translateZ(39px); }
+  .die-face.f4 { transform: rotateY(-90deg) translateZ(39px); }
+  .die-face.f5 { transform: rotateX(-90deg) translateZ(39px); }
+  .die-face.f6 { transform: rotateY(180deg) translateZ(39px); }
+  .pip {
+    display: block; width: 12px; height: 12px; border-radius: 50%; margin: auto;
+    background: radial-gradient(circle at 35% 30%, #4a4a5c, #14141c 75%);
+    box-shadow: inset 0 -1px 2px rgba(255,255,255,.35), 0 1px 1px rgba(0,0,0,.4);
+  }
+  .fate-total {
+    font-size: 19px; font-weight: 800;
+    background: linear-gradient(120deg, var(--gold2), var(--gold));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .fate-opts { display: flex; gap: 10px; align-items: center; justify-content: center; }
+  .fate-opts label { color: var(--muted); font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .cat-btn b { font-weight: 700; color: var(--gold2); }
+  .vs-head { font-size: 13px; color: var(--muted); letter-spacing: .08em; display: flex; align-items: center; gap: 10px; justify-content: center; width: 100%; margin-top: 8px; }
+  .vs-head::before, .vs-head::after { content: ""; height: 1px; flex: 0 1 60px; background: linear-gradient(90deg, transparent, var(--border)); }
+  .vs-head::after { background: linear-gradient(90deg, var(--border), transparent); }
+  .vs-head .add-btn { margin: 0; }
+  .score-zone { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 10px; }
+  .score-opt-name { display: block; font-weight: 700; font-size: 14px; color: var(--text); padding: 4px 0; min-height: 26px; }
+  /* Decks & imports */
+  .deck-tabs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .deck-tab { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: all .18s; }
+  .deck-tab em { font-style: normal; font-size: 11px; color: var(--gold2); }
+  .deck-tab:hover { border-color: #4a4a7e; transform: translateY(-1px); }
+  .deck-tab.active { background: linear-gradient(135deg, var(--accent), #5b4bd6); color: #fff; border-color: transparent; box-shadow: 0 6px 16px rgba(123,104,238,.35); }
+  .deck-tab.active em { color: #fff; }
+  .deck-tab.add { color: var(--accent2); font-weight: 700; }
+  .deck-ops { display: flex; gap: 8px; justify-content: center; }
+  .weigh-import { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .weigh-import select { padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--input); color: var(--text); font-size: 13px; font-family: inherit; cursor: pointer; }
+  .suggest-hint { font-size: 12px; color: var(--muted); text-align: center; min-height: 18px; max-width: 640px; }
+  .suggest-hint b { color: var(--gold2); font-weight: 700; }
+  .suggest-hint.warn { color: var(--pink); font-weight: 600; }
+  .pool-toggle-row { width: 100%; display: flex; justify-content: center; }
+  .pool-panel { width: 100%; max-width: 560px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: rgba(20,20,40,.5); display: flex; flex-direction: column; gap: 10px; }
+  .pool-panel .chips { max-width: none; justify-content: flex-start; max-height: 220px; overflow-y: auto; }
+  .pool-status { font-size: 12px; color: var(--muted); text-align: center; }
+  .cards.six { grid-template-columns: 1fr 1fr 1fr; }
+  .weigh-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); font-size: 14px; padding: 34px 20px; border: 1.5px dashed var(--border); border-radius: 16px; background: rgba(20,20,40,.35); }
+  [hidden] { display: none !important; }
+
+  @media (max-width: 600px) {
+    .cards, .cards.three, .cards.four { grid-template-columns: 1fr; }
+    .shuffle-pick { font-size: 30px; }
+    .tabs { flex-wrap: wrap; padding-left: 12px; padding-right: 12px; gap: 6px; }
+    .tab { padding: 8px 15px; font-size: 13.5px; }
+    .header h1 { font-size: 32px; }
+    .vs-win { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1><span id="title-txt" data-i18n="title">帮你选</span></h1>
+  <p id="sub-txt" data-i18n="sub">选择困难？交给我</p>
+  <button class="lang-btn" id="lang-btn">🌐 EN</button>
+</div>
+<nav class="tabs">
+  <button class="tab active" data-tab="spin">🎡 转盘</button>
+  <button class="tab" data-tab="weigh">⚖️ 权衡</button>
+  <button class="tab" data-tab="shuffle">🎲 随机</button>
+  <button class="tab" data-tab="fate">🧧 命运</button>
+</nav>
+<!-- RECORDS -->
+<div class="record-bar">
+  <input id="record-input" data-i18n-ph="rec_in_ph" placeholder="输入记录码，导入此前的数据" spellcheck="false" />
+  <button id="record-load" data-i18n="rec_load">导入</button>
+  <button id="record-save" data-i18n="rec_save">生成记录码</button>
+</div>
+<div id="record-msg" class="record-msg"></div>
+<div id="record-box" class="record-box" hidden>
+  <div class="record-box-head"><span data-i18n="rec_box_head">本次记录码（已自动存入历史）</span><button id="record-copy" data-i18n="rec_copy">复制</button><button id="record-close">×</button></div>
+  <div id="record-code" class="record-code"></div>
+</div>
+<div class="record-hist" id="record-hist" hidden>
+  <div class="record-hist-head"><span data-i18n="rec_hist">历史记录</span><span id="record-count"></span><button id="record-clear" data-i18n="rec_clear">清空</button></div>
+  <div id="record-list"></div>
+</div>
+<main class="main">
+  <!-- SPIN -->
+  <div class="mode active" id="spin-mode">
+    <div class="deck-tabs" id="deck-tabs"></div>
+    <div class="deck-ops">
+      <button class="add-btn" id="deck-rename" data-i18n="deck_rename">重命名</button>
+      <button class="add-btn" id="deck-del" data-i18n="deck_delete">删除</button>
+    </div>
+    <div class="wheel-wrap">
+      <canvas id="wheel" width="320" height="320"></canvas>
+    </div>
+    <div id="spin-result"></div>
+    <div class="input-row">
+      <input id="spin-input" data-i18n-ph="spin_ph" placeholder="添加选项..." />
+      <button id="spin-add">+</button>
+    </div>
+    <div class="chips" id="spin-chips"></div>
+  </div>
+  <!-- WEIGH -->
+  <div class="mode weigh" id="weigh-mode">
+    <input class="weigh-q" id="weigh-q" data-i18n-ph="weigh_q_ph" placeholder="你在纠结什么？" />
+    <div class="suggest-hint" id="suggest-hint" data-i18n="suggest_tip"></div>
+    <div class="weigh-import">
+      <select id="import-deck"></select>
+      <button class="add-btn" id="import-from-wheel" data-i18n="weigh_import">导入转盘选项</button>
+    </div>
+    <div class="cards" id="weigh-cards"></div>
+    <div class="score-zone">
+      <div class="vs-head"><span data-i18n="score_zone">📊 多维度打分</span><button class="add-btn" id="score-add-crit" data-i18n="score_add_crit">+ 添加评分标准</button></div>
+      <div class="score-table-wrap" id="score-table-wrap"></div>
+      <div id="score-result"></div>
+    </div>
+    <div class="weigh-actions">
+      <button class="btn-add-opt" id="weigh-add-opt" data-i18n="weigh_add">添加选项</button>
+      <button class="btn-weigh" id="weigh-btn" data-i18n="weigh_start">开始权衡</button>
+    </div>
+    <div id="weigh-result"></div>
+  </div>
+  <!-- SHUFFLE -->
+  <div class="mode" id="shuffle-mode">
+    <div class="cat-btns" id="cat-btns"></div>
+    <div class="input-row">
+      <input id="custom-input" placeholder="往当前分类加个选项..." />
+      <button id="custom-add">+</button>
+    </div>
+    <div class="chips" id="custom-chips"></div>
+    <button class="add-btn" id="custom-reset" data-i18n="custom_reset" hidden>清空当前分类的自定义项</button>
+    <div class="pool-toggle-row">
+      <button class="add-btn" id="pool-toggle" data-i18n="pool_toggle">查看全部选项</button>
+    </div>
+    <div class="pool-panel" id="pool-panel" hidden>
+      <div class="chips" id="pool-chips"></div>
+      <div class="weigh-actions">
+        <button class="btn-add-opt" id="pool-to-wheel" data-i18n="pool_import">全部导入当前转盘</button>
+      </div>
+      <div class="pool-status" id="pool-status"></div>
+    </div>
+    <div class="shuffle-display" id="shuffle-display">
+      <div class="shuffle-empty" data-i18n="shuffle_q_eat">今天吃什么？</div>
+    </div>
+    <button class="btn-shuffle" id="shuffle-btn" data-i18n="shuffle_btn">随机一下</button>
+    <div class="vs-head" data-i18n="vs_head">🏆 淘汰赛 PK</div>
+    <div class="weigh-actions">
+      <button class="cat-btn" id="vs-size">抽 8 个</button>
+      <button class="btn-weigh" id="vs-auto" data-i18n="vs_auto">随机抽几个来 PK</button>
+    </div>
+    <div class="input-row">
+      <input id="vs-input" data-i18n-ph="vs_ph" placeholder="或手动加参赛项..." />
+      <button id="vs-add">+</button>
+    </div>
+    <div class="chips" id="vs-chips"></div>
+    <div id="vs-stage" style="display:none"></div>
+    <div class="vs-empty" id="vs-empty">从当前分类里抽几个，两两 PK 选冠军</div>
+    <div class="weigh-actions" id="vs-actions">
+      <button class="btn-weigh" id="vs-start" data-i18n="vs_start">开始 PK</button>
+      <button class="btn-add-opt" id="vs-clear" data-i18n="vs_clear">清空</button>
+    </div>
+  </div>
+  <!-- FATE -->
+  <div class="mode" id="fate-mode">
+    <div class="cat-btns" id="fate-btns">
+      <button class="cat-btn active" data-fate="dice">🎲 骰子</button>
+      <button class="cat-btn" data-fate="yesno">🌸 是非</button>
+      <button class="cat-btn" data-fate="fortune">🧧 签语</button>
+    </div>
+    <div class="shuffle-display" id="fate-display">
+      <div class="shuffle-empty">点「掷骰子」</div>
+    </div>
+    <div class="fate-opts" id="fate-opts">
+      <label><span data-i18n="fate_count">骰子数量</span> <input id="fate-count" type="number" min="1" max="3" value="1" /></label>
+    </div>
+    <button class="btn-shuffle" id="fate-btn" data-i18n="fate_roll">掷骰子</button>
+  </div>
+</main>
+
+<script>
+const COLORS = { bg:"#1A1A2E", surface:"#232342", gold:"#E8C547", accent:"#7B68EE", text:"#EAEAEA", muted:"#6B6B8D", dim:"#16162a" };
+
+/* ---- 语言 / i18n ---- */
+let LANG = (function(){ try { return localStorage.getItem('justpick_lang') || 'zh'; } catch(e){ return 'zh'; } })();
+const I18N = {
+  zh: {
+    title: '帮你选', sub: '选择困难？交给我',
+    tab_spin: '🎡 转盘', tab_weigh: '⚖️ 权衡', tab_shuffle: '🎲 随机', tab_fate: '🧧 命运',
+    cat_eat: '吃', cat_watch: '看', cat_do: '做', cat_wear: '穿',
+    tag_drink: '饮品', tag_food: '美食', tag_buy: '购物', tag_ent: '娱乐', tag_travel: '出行',
+    tag_sport: '运动', tag_study: '学习', tag_music: '音乐', tag_game: '游戏', tag_live: '居家', tag_general: '通用',
+    rec_in_ph: '输入记录码，导入此前的数据', rec_load: '导入', rec_save: '生成记录码',
+    rec_box_head: '本次记录码（已自动存入历史）', rec_copy: '复制', rec_hist: '历史记录', rec_clear: '清空',
+    rec_ok: '导入成功 ✓ 已恢复此前的数据', rec_bad: '导入失败：记录码无效或已损坏', rec_need: '请先输入记录码', rec_broken: '导入失败：该记录已损坏', rec_confirm_clear: '确定清空所有历史记录？', rec_copied: '已复制到剪贴板', rec_copy_fail: '复制失败，请手动全选复制',
+    deck_new: '＋ 新建', deck_rename: '重命名', deck_delete: '删除', deck_name: '转盘 {0}', deck_default: '转盘 1',
+    spin_ph: '添加选项...', spin_deck_prompt: '转盘名称',
+    weigh_q_ph: '你在纠结什么？', weigh_import: '导入转盘选项', weigh_add: '添加选项', weigh_start: '开始权衡',
+    opt_n: '选项{0}', label_pro: '优点', label_con: '缺点', pro_ph: '好处...', con_ph: '坏处...', add_pro: '+ 优点', add_con: '+ 缺点',
+    weigh_win: '{0} 胜出！', weigh_win_suffix: '胜出！', weigh_tie: '平局——要不转个转盘？',
+    score_zone: '📊 多维度打分', score_add_crit: '+ 添加评分标准', crit_n: '标准{0}', weight: '权重', total: '总分', opt_col: '选项',
+    score_lead: '打分领先（{0} 分）', score_hint: '填好选项名后，点 ✨ 或按回车键推荐优缺点；在下方打分会自动算领先者',
+    suggest_mid: '为', suggest_auto: '已填入 {0} 条优点、{1} 条缺点', suggest_prefix: '已识别「', suggest_suffix: '（可再手动增删）',
+    suggest_tip: '填好选项名后，点 ✨ 或按回车键，自动识别并填入优缺点', suggest_btn_title: '识别并填入优缺点（也可按回车键）',
+    del_opt_title: '删除该选项（连同其优缺点与评分）', suggest_need: '请先输入选项名，再点 ✨ 识别',
+    weigh_empty: '还没有选项，点「添加选项」添加一个',
+    import_from_wheel: '导入转盘选项', import_empty: '该转盘还没有选项，先去转盘里加几个吧',
+    custom_ph: '往「{0}」里加个选项...', custom_reset: '清空当前分类的自定义项',
+    pool_toggle: '查看全部选项（{0}）', pool_import: '全部导入当前转盘', pool_added: '已把 {0} 个选项加入转盘「{1}」', pool_dup: '转盘「{0}」里已经有这些选项了',
+    shuffle_btn: '随机一下', shuffling: '随机中...',
+    shuffle_q_eat: '今天吃什么？', shuffle_q_watch: '今天看什么？', shuffle_q_do: '今天做什么？', shuffle_q_wear: '今天穿什么？',
+    vs_head: '🏆 淘汰赛 PK', vs_size: '抽 {0} 个', vs_auto: '随机抽几个来 PK', vs_ph: '或手动加参赛项...',
+    vs_start: '开始 PK', vs_clear: '清空', vs_empty: '从当前分类里抽几个，两两 PK 选冠军',
+    vs_too_few: '当前分类选项太少，换个分类试试', vs_need2: '至少需要 2 个选项才能开始', vs_added: '已加入 {0} 个选项，点击开始»',
+    vs_again: '再来一轮', vs_round: '第 {0} 轮 · 还剩 {1} 场', vs_hint: '点选更想要的那个，另一方出局', vs_bye: '轮空：{0} 自动晋级',
+    vs_sub: '点「再来一轮」换换配对，或改动选项重新开始', vs_dup: '「{0}」已经在名单里了',
+    fate_dice: '🎲 骰子', fate_yesno: '🌸 是非', fate_fortune: '🧧 签语',
+    fate_roll: '掷骰子', fate_ask: '占卜一下', fate_draw: '抽一签',
+    fate_count: '骰子数量', fate_hint_dice: '点「掷骰子」', fate_hint_yesno: '心里想着问题，点「占卜」', fate_hint_fortune: '点「抽签」，看看今天的天意',
+    fate_rolling_dice: '掷骰中...', fate_rolling_yesno: '占卜中...', fate_rolling_fortune: '抽签中...',
+    fate_again_dice: '再掷一次', fate_again: '再抽一次', fate_total: '总点数 {0}',
+    rec_summary_wheel: '转盘{0}项', rec_summary_vs: '淘汰赛{0}项', rec_summary_custom: '自定义{0}项'
+  },
+  en: {
+    title: 'Pick for Me', sub: "Can't decide? Let me help",
+    tab_spin: '🎡 Spin', tab_weigh: '⚖️ Weigh', tab_shuffle: '🎲 Random', tab_fate: '🧧 Fate',
+    cat_eat: 'Eat', cat_watch: 'Watch', cat_do: 'Do', cat_wear: 'Wear',
+    tag_drink: 'Drink', tag_food: 'Food', tag_buy: 'Buy', tag_ent: 'Watch', tag_travel: 'Travel',
+    tag_sport: 'Sport', tag_study: 'Study', tag_music: 'Music', tag_game: 'Game', tag_live: 'Home', tag_general: 'General',
+    rec_in_ph: 'Enter a code to restore your data', rec_load: 'Import', rec_save: 'Generate code',
+    rec_box_head: 'Your code (saved to history)', rec_copy: 'Copy', rec_hist: 'History', rec_clear: 'Clear',
+    rec_ok: 'Imported ✓ data restored', rec_bad: 'Import failed: invalid code', rec_need: 'Please enter a code first', rec_broken: 'Import failed: this record is broken', rec_confirm_clear: 'Clear all history?', rec_copied: 'Copied to clipboard', rec_copy_fail: 'Copy failed — select & copy manually',
+    deck_new: '＋ New', deck_rename: 'Rename', deck_delete: 'Delete', deck_name: 'Wheel {0}', deck_default: 'Wheel 1',
+    spin_ph: 'Add an option...', spin_deck_prompt: 'Wheel name',
+    weigh_q_ph: 'What are you torn about?', weigh_import: 'Import from wheel', weigh_add: 'Add option', weigh_start: 'Start weighing',
+    opt_n: 'Option{0}', label_pro: 'Pros', label_con: 'Cons', pro_ph: 'Benefit...', con_ph: 'Drawback...', add_pro: '+ Pro', add_con: '+ Con',
+    weigh_win: '{0} wins!', weigh_win_suffix: 'wins!', weigh_tie: "It's a tie — spin the wheel?",
+    score_zone: '📊 Multi-criteria scoring', score_add_crit: '+ Add criterion', crit_n: 'Criterion{0}', weight: 'Weight', total: 'Total', opt_col: 'Options',
+    score_lead: 'leads by score ({0})', score_hint: 'Name an option, then tap ✨ or press Enter for suggestions; score below to auto-rank',
+    suggest_mid: 'as', suggest_auto: 'filled {0} pros, {1} cons', suggest_prefix: 'Recognized "', suggest_suffix: ' (editable)',
+    suggest_tip: 'Name an option, then tap ✨ or press Enter to auto-suggest pros & cons', suggest_btn_title: 'Suggest pros & cons (or press Enter)',
+    del_opt_title: 'Delete this option (with its pros, cons & scores)', suggest_need: 'Type an option name first, then tap ✨',
+    weigh_empty: 'No options yet — tap "Add option"',
+    import_from_wheel: 'Import from wheel', import_empty: 'This wheel is empty — add options there first',
+    custom_ph: 'Add to "{0}"...', custom_reset: 'Clear custom items for this category',
+    pool_toggle: 'View all options ({0})', pool_import: 'Import all to current wheel', pool_added: 'Added {0} options to wheel "{1}"', pool_dup: 'Wheel "{0}" already has these options',
+    shuffle_btn: 'Roll', shuffling: 'Rolling...',
+    shuffle_q_eat: 'What to eat today?', shuffle_q_watch: 'What to watch today?', shuffle_q_do: 'What to do today?', shuffle_q_wear: 'What to wear today?',
+    vs_head: '🏆 Bracket PK', vs_size: 'Pick {0}', vs_auto: 'Draw randomly & battle', vs_ph: 'Or add an entry...',
+    vs_start: 'Start PK', vs_clear: 'Clear', vs_empty: 'Draw from this category and battle to a champion',
+    vs_too_few: 'Too few options in this category — try another', vs_need2: 'Need at least 2 options to start', vs_added: '{0} options ready, tap to start »',
+    vs_again: 'Rematch', vs_round: 'Round {0} · {1} left', vs_hint: 'Tap the one you prefer, the other is out', vs_bye: 'Bye: {0} advances',
+    vs_sub: 'Tap "Rematch" to reshuffle, or edit options to restart', vs_dup: '"{0}" is already in the list',
+    fate_dice: '🎲 Dice', fate_yesno: '🌸 Yes-No', fate_fortune: '🧧 Fortune',
+    fate_roll: 'Roll', fate_ask: 'Ask', fate_draw: 'Draw',
+    fate_count: 'Dice count', fate_hint_dice: 'Tap "Roll"', fate_hint_yesno: 'Think of a question, then tap "Ask"', fate_hint_fortune: 'Tap "Draw" for your fortune',
+    fate_rolling_dice: 'Rolling...', fate_rolling_yesno: 'Asking...', fate_rolling_fortune: 'Drawing...',
+    fate_again_dice: 'Roll again', fate_again: 'Draw again', fate_total: 'Total {0}',
+    rec_summary_wheel: 'Wheel {0}', rec_summary_vs: 'Bracket {0}', rec_summary_custom: 'Custom {0}'
+  }
+};
+const YESNO = {
+  zh: ["是","否","肯定是","绝对不行","再想想","天意如此","时机未到","大胆去做","稳了","算了","下次一定","冲冲冲","听你的"],
+  en: ["Yes","No","Definitely","Absolutely not","Think again","Fate says so","Not the time","Go for it","You're safe","Forget it","Next time","Go go go","Up to you"]
+};
+const FORTUNE = {
+  zh: ["上上签｜心想事成，勇敢去选！","上签｜犹豫会败北，果断就赢了","中签｜再想想也没错，但别想太久","中签｜答案不在风里，在你心里","下签｜今天随便选一个也没关系","上上签｜你的直觉这次很准","上签｜慢就是快，稳着来","中签｜选项没有对错，只有体验","中签｜抛个硬币吧，抛起来时你就知道答案了","下签｜宜休息，不宜纠结","上上签｜今天就该尝尝新的","上签｜新选择更精彩，试试看","中签｜选你第一眼看到的那个","中签｜相信自己，别问别人","下签｜运气守恒，明天会更好","上上签｜好运全开，随便选都行","中签｜两个都想要？那就都试试","中签｜鞋合不合适，只有脚知道","下签｜今天不适合做重大决定","上上签｜天选之人，自有天意"],
+  en: ["Great luck｜Wish fulfilled — choose boldly!","Good luck｜Hesitation loses, decisiveness wins","Fair luck｜Nothing wrong with thinking twice, but don't overthink","Fair luck｜The answer isn't in the wind, it's in your heart","Bad luck｜Just pick anything today, there's always tomorrow","Great luck｜Your intuition is on fire today","Good luck｜Slow is smooth, steady wins","Fair luck｜Options aren't right or wrong, only experiences","Fair luck｜Flip a coin — you'll know the answer mid-air","Bad luck｜Better to rest than to ruminate","Great luck｜Try something new today","Good luck｜The new choice is more exciting — go for it","Fair luck｜Pick the one you saw first","Fair luck｜Trust yourself, not others","Bad luck｜Luck balances out — tomorrow gets better","Great luck｜Full luck mode, anything works","Fair luck｜Want both? Try both","Fair luck｜Only you know if the shoe fits","Bad luck｜Not a day for big decisions","Great luck｜The chosen one — fate wills it"]
+};
+function t(key, ...args) {
+  let s = (I18N[LANG] && I18N[LANG][key]) != null ? I18N[LANG][key] : (I18N.zh[key] != null ? I18N.zh[key] : key);
+  for (let i = 0; i < args.length; i++) s = s.split('{' + i + '}').join(String(args[i]));
+  return s;
+}
+
+/* 中英数据映射（覆盖选项库与常见自填项）—— 双向查找 */
+const DATA_PAIRS = [
+  ["披萨","Pizza"],["寿司","Sushi"],["火锅","Hotpot"],["炸鸡","Fried Chicken"],
+  ["面条","Noodles"],["汉堡","Burger"],["烧烤","Barbecue"],["沙拉","Salad"],["咖喱","Curry"],["饺子","Dumplings"],
+  ["炒饭","Fried Rice"],["三明治","Sandwich"],["拉面","Ramen"],["麻辣烫","Spicy Hot Pot"],["米线","Rice Noodles"],
+  ["螺蛳粉","Snail Noodles"],["酸辣粉","Hot Sour Noodles"],["凉皮","Cold Noodles"],["肉夹馍","Chinese Burger"],["煎饼果子","Jianbing"],
+  ["小笼包","Soup Dumplings"],["生煎包","Pan-fried Buns"],["包子","Steamed Buns"],["粥","Congee"],["馄饨","Wonton"],
+  ["盖浇饭","Rice with Toppings"],["煲仔饭","Clay-pot Rice"],["石锅拌饭","Bibimbap"],["蛋包饭","Omurice"],["意面","Pasta"],
+  ["牛排","Steak"],["烤鸭","Roast Duck"],["猪脚饭","Pork Hock Rice"],["黄焖鸡","Braised Chicken"],["烧腊饭","BBQ Meat Rice"],
+  ["肠粉","Rice Rolls"],["桂林米粉","Guilin Noodles"],["牛肉面","Beef Noodles"],["炸酱面","Zhajiang Noodles"],["油泼面","Oil-splash Noodles"],
+  ["热干面","Hot Dry Noodles"],["担担面","Dan Dan Noodles"],["云吞面","Wonton Noodles"],["煎饺","Fried Dumplings"],["关东煮","Oden"],
+  ["铁板烧","Teppanyaki"],["羊肉串","Lamb Skewers"],["烤冷面","Roast Cold Noodles"],["韩式炸鸡","Korean Fried Chicken"],["泰式咖喱","Thai Curry"],
+  ["轻食碗","Light Bowl"],["睡觉","Sleep"],["工作","Work"],["游戏","Games"],["随缘","Go with the flow"],
+  ["学习","Study"],["运动","Workout"],["看书","Read"],["看电影","Watch a movie"],["散步","Walk"],["购物","Shopping"]
+];
+const MAP_ZH = {}, MAP_EN = {};
+DATA_PAIRS.forEach(p => { MAP_ZH[p[0]] = p[1]; MAP_EN[p[1]] = p[0]; });
+const DAILY_EXTRA = [
+  ["喜剧电影","Comedy"],["悬疑剧","Mystery Drama"],["纪录片","Documentary"],["动漫","Anime"],["经典老片","Classic Film"],
+  ["B站短视频","Short Videos"],["美食节目","Food Show"],["脱口秀","Talk Show"],["科幻片","Sci-Fi"],["爱情片","Romance"],
+  ["恐怖片","Horror"],["动作片","Action"],["动画电影","Animated Film"],["电视剧","TV Series"],["综艺","Variety Show"],
+  ["真人秀","Reality Show"],["音乐剧","Musical"],["话剧","Stage Play"],["相声","Xiangsheng"],["评书","Storytelling"],
+  ["游戏实况","Game Stream"],["旅行vlog","Travel Vlog"],["学习课程","Online Course"],["TED演讲","TED Talk"],["新闻","News"],
+  ["体育比赛","Sports"],["英剧","British Drama"],["美剧","American Drama"],["日剧","Japanese Drama"],["韩剧","Korean Drama"],
+  ["国产剧","Chinese Drama"],["情景喜剧","Sitcom"],["演唱会录像","Concert Video"],["舞台剧","Theater"],["芭蕾舞剧","Ballet"],
+  ["歌舞片","Musical Film"],["西部片","Western"],["武侠片","Wuxia"],["犯罪片","Crime"],["历史剧","Period Drama"],
+  ["科普视频","Science Video"],["宇宙纪录片","Space Documentary"],["自然纪录片","Nature Doc"],["考古纪录片","Archaeology Doc"],["烘焙视频","Baking Video"],
+  ["手工视频","DIY Video"],["萌宠视频","Pet Video"],["解压视频","Satisfying Video"],["播客","Podcast"],["有声书","Audiobook"],
+  ["出去走走","Go for a walk"],["看20页书","Read 20 pages"],["给朋友打电话","Call a friend"],["试个新菜谱","Try a new recipe"],["画点东西","Draw something"],
+  ["整理房间","Tidy the room"],["写日记","Journal"],["学个小魔术","Learn a magic trick"],["运动半小时","Workout 30 min"],["跑步","Run"],
+  ["瑜伽","Yoga"],["冥想","Meditate"],["拉伸放松","Stretch"],["逛公园","Stroll in the park"],["逛超市","Grocery shopping"],
+  ["散步听歌","Walk with music"],["背单词","Review vocab"],["学一项新技能","Learn a new skill"],["练字","Practice calligraphy"],["做手工","Do crafts"],
+  ["拼图","Puzzle"],["下棋","Play chess"],["玩桌游","Play board games"],["打游戏","Play video games"],["浇花养草","Water plants"],
+  ["大扫除","Deep clean"],["断舍离","Declutter"],["整理收纳","Organize"],["记账","Track expenses"],["规划下周","Plan next week"],
+  ["练琴","Practice instrument"],["唱歌","Sing"],["跳舞","Dance"],["出门拍照","Go photo-shooting"],["拍短视频","Make a short video"],
+  ["敷面膜","Face mask"],["泡个热水澡","Hot bath"],["早睡","Sleep early"],["洗衣服","Laundry"],["晒被子","Air the quilt"],
+  ["修理小物件","Fix something"],["学做饭","Learn to cook"],["烘焙","Bake"],["手冲咖啡","Pour-over coffee"],["泡一壶茶","Brew tea"],
+  ["整理相册","Organize photos"],["备份手机","Backup phone"],["给家人打个电话","Call family"],["捐闲置衣物","Donate clothes"],["做一件拖延很久的事","Do one long-put-off thing"],
+  ["全黑","All black"],["亮色系","Bright colors"],["压箱底的那件","What's been buried in the closet"],["叠穿","Layering"],["舒适休闲","Comfy casual"],
+  ["轻正式","Smart casual"],["最爱的卫衣","Favorite hoodie"],["白色系","All white"],["牛仔裤加白T","Jeans + white tee"],["连衣裙","Dress"],
+  ["半身裙","Skirt"],["阔腿裤","Wide-leg pants"],["西装外套","Blazer"],["风衣","Trench coat"],["大衣","Coat"],
+  ["针织衫","Knitwear"],["衬衫","Shirt"],["格子衬衫","Plaid shirt"],["条纹衫","Striped top"],["背心加短裤","Tank + shorts"],
+  ["运动套装","Activewear"],["瑜伽裤","Yoga pants"],["牛仔外套","Denim jacket"],["皮夹克","Leather jacket"],["飞行夹克","Bomber jacket"],
+  ["棒球服","Baseball jacket"],["长裙","Maxi dress"],["百褶裙","Pleated skirt"],["A字裙","A-line skirt"],["高腰裤","High-waist pants"],
+  ["喇叭裤","Flared pants"],["直筒裤","Straight-leg pants"],["休闲西裤","Dress chinos"],["开衫","Cardigan"],["高领毛衣","Turtleneck"],
+  ["帽衫","Hoodie"],["棉服","Padded jacket"],["羽绒服","Down jacket"],["冲锋衣","Jacket"],["马甲叠穿","Vest layering"],
+  ["复古风","Retro"],["中性风","Androgynous"],["优雅风","Elegant"],["街头风","Streetwear"],["学院风","Preppy"],
+  ["日系风","Japanese style"],["工装裤","Cargo pants"],["灯芯绒","Corduroy"],["丝绒裙","Velvet skirt"],["简单T恤加牛仔短裤","Tee + denim shorts"]
+];
+DAILY_EXTRA.forEach(p => { MAP_ZH[p[0]] = p[1]; MAP_EN[p[1]] = p[0]; });
+function applyContent(toEn) {
+  const doList = a => a.map(x => typeof x === 'string' ? (toEn ? (MAP_ZH[x]!=null?MAP_ZH[x]:x) : (MAP_EN[x]!=null?MAP_EN[x]:x)) : x);
+  wheelDecks.forEach(d => { if (d) d.items = doList(d.items || []); });
+  Object.keys(customDaily).forEach(k => { customDaily[k] = doList(customDaily[k]); });
+  for (const k in DAILY) DAILY[k] = doList(DAILY[k]);
+  vsItems = doList(vsItems);
+  // items 数组被整体替换后，wheelItems 仍指向旧数组，需重新指向当前转盘
+  if (wheelDecks[activeDeck]) wheelItems = wheelDecks[activeDeck].items;
+}
+/* 默认转盘名随语言切换：转盘 N ⇄ Wheel N */
+function locDefaultDeckName(name) {
+  name = String(name || '');
+  if (LANG === 'zh') {
+    const m = /^Wheel\s*(\d+)$/i.exec(name.trim());
+    if (m) return '转盘 ' + m[1];
+  } else {
+    const m = /^转盘\s*(\d+)$/.exec(name.trim());
+    if (m) return 'Wheel ' + m[1];
+  }
+  return name;
+}
+
+function applyLang() {
+  document.getElementById('title-txt').textContent = t('title');
+  document.getElementById('sub-txt').textContent = t('sub');
+  document.getElementById('lang-btn').textContent = LANG === 'zh' ? '🌐 EN' : '🌐 中文';
+  document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.dataset.i18n; if (k) el.textContent = t(k); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { const k = el.dataset.i18nPh; if (k) el.placeholder = t(k); });
+  const toEn = LANG === 'en';
+  applyContent(toEn);
+  wheelDecks.forEach(d => { if (d) d.name = locDefaultDeckName(d.name); });
+  document.querySelectorAll('.tab').forEach(b => { b.textContent = t('tab_' + b.dataset.tab); });
+  document.getElementById('vs-size').textContent = t('vs_size', vsPickSize);
+  renderDecks(); renderChips(); drawWheel(wheelAngle); renderDeckSelect();
+  relocSuggestions();
+  renderWeigh();
+  renderCats(); renderCustomChips(); updatePoolToggle();
+  renderVsStage(); renderVsChips();
+  const p = document.getElementById('pool-panel'); if (p && !p.hidden) renderPoolPanel();
+  renderFate();
+  renderHistory();
+  try { localStorage.setItem('justpick_lang', LANG); } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', applyLang);
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('lang-btn').addEventListener('click', () => {
+    LANG = LANG === 'zh' ? 'en' : 'zh';
+    applyLang();
+  });
+});
+const WHEEL_COLORS = ["#E8C547","#7B68EE","#3D5A99","#E85D75","#4ECDC4","#FF8A5C","#A88BEB","#56C596"];
+let DAILY = {
+  eat: ["面条","汉堡","寿司","披萨","烧烤","沙拉","咖喱","饺子","炒饭","三明治","拉面","火锅","麻辣烫","米线","螺蛳粉","酸辣粉","凉皮","肉夹馍","煎饼果子","小笼包","生煎包","包子","粥","馄饨","盖浇饭","煲仔饭","石锅拌饭","蛋包饭","意面","牛排","烤鸭","猪脚饭","黄焖鸡","烧腊饭","肠粉","桂林米粉","牛肉面","炸酱面","油泼面","热干面","担担面","云吞面","煎饺","关东煮","铁板烧","羊肉串","烤冷面","韩式炸鸡","泰式咖喱","轻食碗"],
+  watch: ["喜剧电影","悬疑剧","纪录片","动漫","经典老片","B站短视频","美食节目","脱口秀","科幻片","爱情片","恐怖片","动作片","动画电影","电视剧","综艺","真人秀","音乐剧","话剧","相声","评书","游戏实况","旅行vlog","学习课程","TED演讲","新闻","体育比赛","英剧","美剧","日剧","韩剧","国产剧","情景喜剧","演唱会录像","舞台剧","芭蕾舞剧","歌舞片","西部片","武侠片","犯罪片","历史剧","科普视频","宇宙纪录片","自然纪录片","考古纪录片","烘焙视频","手工视频","萌宠视频","解压视频","播客","有声书"],
+  do: ["出去走走","看20页书","给朋友打电话","试个新菜谱","画点东西","整理房间","写日记","学个小魔术","运动半小时","跑步","瑜伽","冥想","拉伸放松","逛公园","逛超市","散步听歌","背单词","学一项新技能","练字","做手工","拼图","下棋","玩桌游","打游戏","浇花养草","大扫除","断舍离","整理收纳","记账","规划下周","练琴","唱歌","跳舞","出门拍照","拍短视频","敷面膜","泡个热水澡","早睡","洗衣服","晒被子","修理小物件","学做饭","烘焙","手冲咖啡","泡一壶茶","整理相册","备份手机","给家人打个电话","捐闲置衣物","做一件拖延很久的事"],
+  wear: ["全黑","亮色系","压箱底的那件","叠穿","舒适休闲","轻正式","最爱的卫衣","白色系","牛仔裤加白T","连衣裙","半身裙","阔腿裤","西装外套","风衣","大衣","针织衫","衬衫","格子衬衫","条纹衫","背心加短裤","运动套装","瑜伽裤","牛仔外套","皮夹克","飞行夹克","棒球服","长裙","百褶裙","A字裙","高腰裤","喇叭裤","直筒裤","休闲西裤","开衫","高领毛衣","帽衫","棉服","羽绒服","冲锋衣","马甲叠穿","复古风","中性风","优雅风","街头风","学院风","日系风","工装裤","灯芯绒","丝绒裙","简单T恤加牛仔短裤"]
+};
+
+/* ---- TABS ---- */
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.mode').forEach(m => m.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab + '-mode').classList.add('active');
+  });
+});
+
+/* ---- SPIN ---- */
+let wheelDecks = [{ name: '转盘 1', items: ["披萨", "寿司", "火锅", "炸鸡"] }];
+let activeDeck = 0;
+let wheelItems = wheelDecks[0].items;  // 指向当前 deck 的 items（引用）
+let wheelAngle = 0;
+let spinning = false;
+let pointerAngle = 0;
+let pointerVel = 0;
+let lastFrame = 0;
+let prevPegAngle = null;
+let prevWheelAngle = null;
+
+function renderDecks() {
+  const el = document.getElementById('deck-tabs');
+  el.innerHTML = wheelDecks.map((d, i) =>
+    `<button class="deck-tab${i === activeDeck ? ' active' : ''}" data-i="${i}">${esc(d.name)}<em>${d.items.length}</em></button>`
+  ).join('') + `<button class="deck-tab add" id="deck-add">${t('deck_new')}</button>`;
+  el.querySelectorAll('.deck-tab[data-i]').forEach(b => b.addEventListener('click', () => {
+    activeDeck = +b.dataset.i;
+    wheelItems = wheelDecks[activeDeck].items;
+    renderDecks(); renderChips(); drawWheel(wheelAngle); renderDeckSelect();
+  }));
+  const addBtn = el.querySelector('#deck-add');
+  if (addBtn) addBtn.addEventListener('click', () => {
+    wheelDecks.push({ name: t('deck_name', wheelDecks.length + 1), items: [] });
+    activeDeck = wheelDecks.length - 1;
+    wheelItems = wheelDecks[activeDeck].items;
+    renderDecks(); renderChips(); drawWheel(wheelAngle); renderDeckSelect();
+  });
+  document.getElementById('deck-del').disabled = wheelDecks.length <= 1;
+}
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const WHEEL_SIZE = 320;
+(function setupCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = WHEEL_SIZE * dpr;
+  canvas.height = WHEEL_SIZE * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+})();
+
+function drawWheel(angle) {
+  const size = WHEEL_SIZE, cx = size/2, cy = size/2, r = size/2 - 8;
+  ctx.clearRect(0, 0, size, size);
+  const opts = wheelItems.length ? wheelItems : (LANG === 'en' ? ["Add","some","options"] : ["添加","一些","选项"]);
+  const slice = (2 * Math.PI) / opts.length;
+  opts.forEach((opt, i) => {
+    const start = angle + i * slice;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, start + slice);
+    ctx.fillStyle = WHEEL_COLORS[i % WHEEL_COLORS.length];
+    ctx.fill();
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + slice / 2);
+    ctx.textAlign = "right";
+    ctx.font = `600 ${Math.max(12, 17 - opts.length * 0.55)}px system-ui, 'Microsoft YaHei', 'Noto Sans SC', sans-serif`;
+    const label = opt.length > 12 ? opt.slice(0, 11) + "…" : opt;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(26,26,46,0.55)";
+    ctx.strokeText(label, r - 16, 5);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(label, r - 16, 5);
+    ctx.restore();
+  });
+  ctx.beginPath();
+  ctx.arc(cx, cy, 22, 0, 2 * Math.PI);
+  ctx.fillStyle = COLORS.bg;
+  ctx.fill();
+  // steel pins the flipper kicks off
+  for (let i = 0; i < opts.length; i++) {
+    const pa = angle + i * slice;
+    const px = cx + Math.cos(pa) * (r - 9);
+    const py = cy + Math.sin(pa) * (r - 9);
+    ctx.beginPath(); ctx.arc(px, py, 3.8, 0, 2*Math.PI); ctx.fillStyle = "rgba(6,6,16,.6)"; ctx.fill();
+    const pg = ctx.createRadialGradient(px - 1, py - 1.3, 0.4, px, py, 3.4);
+    pg.addColorStop(0, "#ffffff");
+    pg.addColorStop(.55, "#c7c7e8");
+    pg.addColorStop(1, "#5c5c86");
+    ctx.beginPath(); ctx.arc(px, py, 3.1, 0, 2*Math.PI); ctx.fillStyle = pg; ctx.fill();
+  }
+  // short triangular pointer, knocked aside by the pins
+  ctx.save();
+  ctx.translate(cx, cy - r + 6);
+  ctx.rotate(pointerAngle);
+  const TW = 15, TH = 40;
+  ctx.shadowColor = "rgba(232,197,71,.6)";
+  ctx.shadowBlur = 12 + Math.min(18, Math.abs(pointerVel) * 22);
+  const tg = ctx.createLinearGradient(-TW, 0, TW, 0);
+  tg.addColorStop(0, "#b8880f");
+  tg.addColorStop(.35, "#FFD54F");
+  tg.addColorStop(.55, "#FFF3C4");
+  tg.addColorStop(1, "#c08f12");
+  ctx.beginPath();
+  ctx.moveTo(-TW, 0); ctx.lineTo(TW, 0); ctx.lineTo(0, TH); ctx.closePath();
+  ctx.fillStyle = tg;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "rgba(20,16,4,.55)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // pivot cap
+  ctx.fillStyle = "#1c1c36";
+  ctx.beginPath(); ctx.arc(0, 0, 7, 0, 2*Math.PI); ctx.fill();
+  const rv = ctx.createRadialGradient(-2, -2.5, 0.5, 0, 0, 6.5);
+  rv.addColorStop(0, "#f6f6ff");
+  rv.addColorStop(.6, "#9a9ac0");
+  rv.addColorStop(1, "#3c3c62");
+  ctx.beginPath(); ctx.arc(0, 0, 6.2, 0, 2*Math.PI); ctx.fillStyle = rv; ctx.fill();
+  ctx.fillStyle = "#2a2a4c";
+  ctx.beginPath(); ctx.arc(0, 0, 1.8, 0, 2*Math.PI); ctx.fill();
+  ctx.restore();
+}
+
+function renderChips() {
+  const el = document.getElementById('spin-chips');
+  el.innerHTML = wheelItems.map((item, i) =>
+    `<span class="chip">${item}<button data-idx="${i}">x</button></span>`
+  ).join('');
+  el.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      wheelItems.splice(+btn.dataset.idx, 1);
+      renderChips();
+      drawWheel(wheelAngle);
+    });
+  });
+}
+
+const WHEEL_CX = WHEEL_SIZE / 2;
+const WHEEL_CY = WHEEL_SIZE / 2;
+const WHEEL_R = WHEEL_SIZE / 2 - 8;
+const PEG_R = WHEEL_R - 9;
+const PIVOT_Y = WHEEL_CY - WHEEL_R + 6;
+const ARM_LEN = WHEEL_R - 58;
+function signedDiff(a) { return ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; }
+function updatePointer(now, moving) {
+  const dt = lastFrame ? Math.min(2.5, Math.max(0.2, (now - lastFrame) / 16.67)) : 1;
+  lastFrame = now;
+  // wheel angular speed (rad/frame): as the wheel crawls to a stop the pins stop pushing
+  const speed = prevWheelAngle == null ? 0 : Math.abs(wheelAngle - prevWheelAngle) / dt;
+  prevWheelAngle = wheelAngle;
+  const n = wheelItems.length || 3;
+  const slice = (2 * Math.PI) / n;
+  const pushWindow = speed > 0.05 ? 0.45 : Math.max(0, 0.45 * (speed - 0.006) / 0.044);
+  let contact = null;
+  if (moving && pushWindow > 0.02) {
+    // find a rim pin close to the pointer's tip in the upper half of the wheel
+    for (let i = 0; i < n; i++) {
+      const a = wheelAngle + i * slice;
+      if (Math.sin(a) < -0.3) {
+        const th = Math.atan2(PEG_R * Math.cos(a), WHEEL_CY + PEG_R * Math.sin(a) - PIVOT_Y);
+        const d = Math.abs(signedDiff(th - pointerAngle));
+        if (d < pushWindow && (contact === null || d < contact.d)) contact = { th, d };
+      }
+    }
+  }
+  if (contact) {
+    // pushed by a peg: the arm tip rides the peg kinematically, keep its sweep speed
+    if (prevPegAngle != null) {
+      pointerVel = (contact.th - prevPegAngle) / dt;
+      pointerVel = Math.max(-0.75, Math.min(0.75, pointerVel));
+    }
+    pointerAngle = contact.th;
+    prevPegAngle = contact.th;
+  } else {
+    // free: rubber flipper — kicks off the pin, then a fast damped wobble
+    if (prevPegAngle != null) pointerVel = Math.max(-1.1, Math.min(1.1, pointerVel * 1.35));
+    pointerVel += (-pointerAngle) * 0.55 * dt - pointerVel * 0.24 * dt;
+    pointerAngle += pointerVel * dt;
+    prevPegAngle = null;
+    if (!moving && Math.abs(pointerVel) < 0.008 && Math.abs(pointerAngle) < 0.012) {
+      pointerAngle = 0; pointerVel = 0;
+    }
+  }
+  if (pointerAngle > 0.95) { pointerAngle = 0.95; if (pointerVel > 0) pointerVel = 0; }
+  if (pointerAngle < -0.95) { pointerAngle = -0.95; if (pointerVel < 0) pointerVel = 0; }
+}
+
+function spin() {
+  if (spinning || wheelItems.length < 2) return;
+  spinning = true;
+  document.getElementById('spin-result').innerHTML = '';
+  const totalRotation = Math.PI * 2 * (5 + Math.random() * 5);
+  const startAngle = wheelAngle;
+  const duration = 4800;
+  const startTime = performance.now();
+  lastFrame = 0;
+  prevWheelAngle = null;
+  function animate(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 5);
+    wheelAngle = startAngle + totalRotation * ease;
+    updatePointer(now, t < 1);
+    drawWheel(wheelAngle);
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else if (Math.abs(pointerAngle) > 0.012 || Math.abs(pointerVel) > 0.01) {
+      requestAnimationFrame(animate);
+    } else {
+      const slice = (2 * Math.PI) / wheelItems.length;
+      // 指针复位在正上方（画布角度 3π/2），计算指针此刻所指的扇区
+      const ptr = (3 * Math.PI / 2 - (wheelAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+      const idx = Math.floor(ptr / slice) % wheelItems.length;
+      document.getElementById('spin-result').innerHTML = `<div class="result">${wheelItems[idx]}</div>`;
+      spinning = false;
+      lastFrame = 0;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+canvas.addEventListener('click', spin);
+document.getElementById('spin-add').addEventListener('click', addSpinItem);
+document.getElementById('spin-input').addEventListener('keydown', e => { if (e.key === 'Enter') addSpinItem(); });
+function addSpinItem() {
+  const input = document.getElementById('spin-input');
+  const v = input.value.trim();
+  if (v && !wheelItems.includes(v)) { wheelItems.push(v); renderChips(); drawWheel(wheelAngle); }
+  input.value = '';
+}
+document.getElementById('deck-rename').addEventListener('click', () => {
+  const cur = wheelDecks[activeDeck].name;
+  const name = prompt(t('spin_deck_prompt'), cur);
+  if (name && name.trim()) { wheelDecks[activeDeck].name = name.trim(); renderDecks(); renderDeckSelect(); }
+});
+document.getElementById('deck-del').addEventListener('click', () => {
+  if (wheelDecks.length <= 1) return;
+  wheelDecks.splice(activeDeck, 1);
+  activeDeck = Math.max(0, activeDeck - 1);
+  wheelItems = wheelDecks[activeDeck].items;
+  renderDecks(); renderChips(); drawWheel(wheelAngle); renderDeckSelect();
+});
+drawWheel(0);
+renderChips();
+renderDecks();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawWheel(wheelAngle));
+
+/* ---- WEIGH ---- */
+let weighOptions = [
+  { name: "", pros: [""], cons: [""], scores: [3, 3] },
+  { name: "", pros: [""], cons: [""], scores: [3, 3] }
+];
+let scoreCrits = [{ name: '', w: 3 }, { name: '', w: 3 }];
+let showWeighResult = false;
+
+/* 根据选项名自动推荐优缺点的关键词库（每条 4~6 项，数量各异更自然） */
+const SUGGEST = {
+  "手机": { pros: ["性能强", "拍照好", "续航久", "系统流畅", "生态好用"], cons: ["略贵", "发热", "换机麻烦", "容易掉价"] },
+  "电脑": { pros: ["性能强", "屏幕好", "接口多", "扩展性强", "生产力高"], cons: ["价格高", "重量偏大", "散热噪音", "占空间"] },
+  "笔记本": { pros: ["便携", "续航长", "性能够用", "颜值高"], cons: ["价格高", "散热噪音", "扩展性一般"] },
+  "平板": { pros: ["屏幕大", "轻便", "看视频爽", "记笔记方便"], cons: ["生产力一般", "容易吃灰", "系统生态限制"] },
+  "耳机": { pros: ["音质好", "降噪强", "便携", "长时间佩戴舒适"], cons: ["价格区间大", "容易丢", "续航需充电"] },
+  "手表": { pros: ["看时间方便", "有档次", "运动监测", "健康提醒"], cons: ["贵", "续航一般", "生态绑定"] },
+  "冰箱": { pros: ["保鲜好", "容量大", "省电", "静音"], cons: ["占地方", "价格较高", "搬动不便"] },
+  "洗衣机": { pros: ["省力", "洗得干净", "功能多", "静音", "耐用"], cons: ["耗水耗电", "占地", "安装要求"] },
+  "空调": { pros: ["制冷快", "静音", "省电", "制热也好", "安装便捷"], cons: ["安装麻烦", "电费增加", "外机噪音", "滤网需清洁"] },
+  "电视": { pros: ["大屏", "画质好", "家庭娱乐", "追剧爽", "玩游戏爽"], cons: ["占地", "容易积灰", "会员开销", "伤眼"] },
+  "汽车": { pros: ["出行自由", "舒适", "有面子", "装载能力强", "长途方便"], cons: ["贵", "停车难", "养车成本高", "堵车糟心", "保险油费"] },
+  "房子": { pros: ["安居", "保值", "空间大", "按需装修", "归属感"], cons: ["贷款压力", "装修累", "决策难", "地段纠结", "物业开销"] },
+  "工作": { pros: ["薪资高", "发展好", "氛围好", "离家近", "能学东西"], cons: ["加班", "通勤远", "不确定性", "压力大", "转行风险"] },
+  "offer": { pros: ["薪资高", "发展好", "福利好", "平台大"], cons: ["加班", "通勤远", "不确定性", "竞争大"] },
+  "考研": { pros: ["提升学历", "深造机会", "平台更好", "自我提升"], cons: ["时间长", "压力大", "晚就业", "落榜风险"] },
+  "旅行": { pros: ["放松", "开眼界", "拍照打卡", "换环境充电", "创造回忆"], cons: ["花钱", "累", "人多", "行程折腾"] },
+  "火锅": { pros: ["热闹", "选择多", "氛围好", "热气腾腾"], cons: ["排队久", "上火", "味道重", "衣服有味儿"] },
+  "外卖": { pros: ["方便", "快", "选择多", "不用做饭", "随时可点"], cons: ["较贵", "不够健康", "口味不稳定", "配送等餐"] },
+  "烧烤": { pros: ["香", "气氛好", "啤酒配", "选择多"], cons: ["油烟", "上火", "排队", "卫生参差"] },
+  "寿司": { pros: ["新鲜", "清爽", "摆盘精致", "低油"], cons: ["偏贵", "生冷", "吃不饱", "排队"] },
+  "披萨": { pros: ["芝士香", "方便分享", "口味多", "饱腹"], cons: ["高热量", "偏贵", "口味偏西式"] },
+  "饺子": { pros: ["家常味", "荤素均衡", "选择多", "便宜实惠"], cons: ["偏单一", "吃多腻", "饭点排队"] },
+  "面条": { pros: ["快", "便宜", "热乎", "选择多", "饱腹"], cons: ["碳水高", "营养单一", "口味看店"] },
+  "汉堡": { pros: ["快", "解馋", "选择多", "套餐划算"], cons: ["高热量", "油炸", "不够健康"] },
+  "咖啡": { pros: ["提神", "香气", "社交氛围", "选择多"], cons: ["影响睡眠", "偏贵", "易依赖"] },
+  "奶茶": { pros: ["好喝", "解压", "颜值高", "选择多"], cons: ["高糖", "发胖", "不便宜", "排队"] },
+  "甜品": { pros: ["治愈", "好看", "拍照好看", "幸福感强"], cons: ["高糖高脂", "发胖", "偏贵"] },
+  "麻辣烫": { pros: ["自由搭配", "热乎", "便宜实惠", "味道重口过瘾"], cons: ["偏油", "偏咸", "上火", "环境一般"] },
+  "电影": { pros: ["放松", "视听享受", "话题多", "沉浸感"], cons: ["可能踩雷", "票价不便宜", "时间固定", "好片抢票"] },
+  "游戏": { pros: ["解压", "社交", "成就感", "随时随地"], cons: ["伤眼", "易上瘾", "占用时间", "氪金诱惑"] },
+  "健身": { pros: ["身体好", "减压", "塑形", "增强自信", "改善睡眠"], cons: ["需要坚持", "可能受伤", "时间成本", "花钱办卡"] },
+  "运动": { pros: ["身体好", "减压", "塑形", "提高代谢"], cons: ["需要坚持", "可能受伤", "时间成本"] },
+  "课程": { pros: ["学到东西", "充实", "有目标", "提升竞争力"], cons: ["花钱", "可能坚持不下来", "时间冲突"] },
+  "衣服": { pros: ["好看", "提升自信", "心情好", "展现风格", "社交加分"], cons: ["贵", "衣柜爆炸", "会过时", "清洗麻烦"] },
+  "鞋": { pros: ["舒服", "百搭", "提升气质", "彰显品味"], cons: ["贵", "磨脚风险", "难打理", "尺码纠结"] },
+  "宠物": { pros: ["陪伴", "治愈", "乐趣", "责任感", "朋友圈素材"], cons: ["费精力", "开销", "责任大", "卫生打扫"] },
+  "相机": { pros: ["画质好", "记录生活", "创作", "可换镜头", "摄影乐趣"], cons: ["贵", "重", "吃灰风险", "学习成本"] },
+  /* 全球品牌 / 目的地 / 美食（中英均可触发） */
+  "iphone": { pros: ["系统流畅", "生态好用", "拍照好", "保值", "颜值高"], cons: ["偏贵", "充电慢", "封闭生态", "维修贵"] },
+  "mac": { pros: ["系统稳定", "屏幕好", "续航长", "流畅", "设计精美"], cons: ["贵", "软件兼容一般", "游戏弱"] },
+  "ipad": { pros: ["屏幕大", "便携", "记笔记/画画爽", "续航好"], cons: ["生产力有限", "偏贵", "吃灰风险"] },
+  "switch": { pros: ["合家欢", "独占游戏多", "便携", "聚会神器"], cons: ["性能一般", "游戏贵", "手柄漂移"] },
+  "playstation": { pros: ["画质强", "独占大作", "手柄体验好", "沉浸感"], cons: ["主机+游戏贵", "占地方", "联机需会员"] },
+  "xbox": { pros: ["游戏库大", "Game Pass 划算", "兼容性高"], cons: ["独占较逊", "体积大", "订阅成本"] },
+  "netflix": { pros: ["片源多", "自制剧精良", "画质好", "无广告"], cons: ["订阅费", "部分地区片库少", "需要网络"] },
+  "迪士尼": { pros: ["氛围梦幻", "适合全家", "回忆感", "拍照出片"], cons: ["门票贵", "排队久", "人多", "消费高"] },
+  "环球影城": { pros: ["项目刺激", "IP 情怀", "体验好", "沉浸强"], cons: ["排队久", "门票+消费高", "人多"] },
+  "星巴克": { pros: ["环境舒适", "口味稳定", "门店多", "社交场合"], cons: ["偏贵", "咖啡因依赖", "排队"] },
+  "麦当劳": { pros: ["快", "便宜实惠", "门店多", "稳定解馋"], cons: ["高热量", "油炸", "不够健康"] },
+  "肯德基": { pros: ["炸鸡香", "选择多", "门店多", "套餐划算"], cons: ["高热量", "油炸", "偏油"] },
+  "巴厘岛": { pros: ["海景美", "度假氛围", "性价比高", "拍照出片"], cons: ["机票住宿开销", "旺季人多", "语言沟通"] },
+  "马尔代夫": { pros: ["顶级海景", "私密度假", "适合蜜月", "潜水天堂"], cons: ["非常贵", "路途远", "时段受限"] },
+  "日本": { pros: ["美食多", "干净安全", "购物体验好", "四季有景"], cons: ["消费偏高", "语言障碍", "机酒贵"] },
+  "泰国": { pros: ["物价低", "美食丰富", "海岛多", "服务热情"], cons: ["人多", "交通乱", "季节性闷热"] },
+  "意大利面": { pros: ["口感好", "酱料多样", "饱腹", "西餐氛围"], cons: ["碳水较高", "正宗店贵", "口味看店"] },
+  "拉面": { pros: ["汤头香", "选择多", "热乎", "便宜实惠"], cons: ["偏咸", "碳水高", "排队"] },
+  "牛排": { pros: ["肉香", "饱腹", "有仪式感", "蛋白质"], cons: ["偏贵", "火候难控", "胆固醇"] },
+  "沙拉": { pros: ["轻食健康", "低卡", "清爽", "减脂友好"], cons: ["吃不饱", "偏贵", "口味单一"] },
+  "寿司": { pros: ["新鲜", "清爽", "低油", "摆盘精致"], cons: ["偏贵", "生冷", "吃不饱", "排队"] },
+  "sushi": { pros: ["新鲜", "清爽", "低油", "摆盘精致"], cons: ["偏贵", "生冷", "吃不饱", "排队"] },
+  "starbucks": { pros: ["环境舒适", "口味稳定", "门店多", "社交场合"], cons: ["偏贵", "咖啡因依赖", "排队"] },
+  "披萨": { pros: ["芝士香", "方便分享", "口味多", "饱腹"], cons: ["高热量", "偏贵", "口味偏西式"] },
+  "中餐": { pros: ["选择超多", "口味丰富", "热闹氛围", "合家欢"], cons: ["油腻可选多", "排队", "热量高"] },
+  "西餐": { pros: ["环境好", "摆盘精致", "有仪式感", "适合约会"], cons: ["偏贵", "分量小", "口味看人"] },
+  "日料": { pros: ["新鲜", "精致", "清淡健康", "氛围好"], cons: ["偏贵", "生冷", "吃不饱"] },
+  "韩餐": { pros: ["下饭", "口味浓", "热闹", "性价比可以"], cons: ["偏辣", "口感重复", "排队"] },
+  "火锅": { pros: ["热闹", "选择多", "氛围好", "热气腾腾"], cons: ["排队久", "上火", "味道重", "衣服有味儿"] }
+};
+/* 按语义类别分派的兜底推荐（更多条、更贴切，带识别标签） */
+const CATEGORY_SUGGEST = {
+  drink:   { pros: ["提神/解腻", "好喝上头", "社交氛围好", "选择很多"], cons: ["影响睡眠", "高糖/高咖啡因", "偏贵", "容易上瘾"] },
+  food:    { pros: ["好吃解馋", "选择丰富", "热乎有氛围", "方便省事", "适合分享"], cons: ["排队/等餐", "热量/上火", "口味看店", "长期开销不小"] },
+  buy:     { pros: ["品质可靠", "颜值高", "用着顺手", "性价比可以", "售后省心"], cons: ["消费冲动", "可能吃灰", "价格偏贵", "选择太多挑花眼"] },
+  watch:   { pros: ["放松解压", "长见识", "有话题聊", "沉浸感强"], cons: ["费时间", "可能踩雷", "选择困难"] },
+  travel:  { pros: ["放松心情", "开眼界", "拍照留念", "换环境充电", "创造回忆"], cons: ["花费不低", "行程累", "人多拥挤", "行程折腾"] },
+  sport:   { pros: ["强身健体", "减压提神", "塑形好看", "睡得香"], cons: ["需要坚持", "可能受伤", "时间成本", "装备开销"] },
+  study:   { pros: ["提升自己", "长远价值", "增强竞争力", "充实"], cons: ["费时间", "花钱", "可能坚持不下来", "见效慢"] },
+  music:   { pros: ["陶冶情操", "减压", "培养气质", "成就感"], cons: ["入门难", "器材投入", "需要练习时间"] },
+  game:    { pros: ["解压", "社交", "成就感", "随时可玩"], cons: ["伤眼", "易上瘾", "占用时间", "氪金诱惑"] },
+  live:    { pros: ["提升生活品质", "住得更舒服", "归属感", "长期价值"], cons: ["开销大", "费心费力", "决策难", "踩坑风险"] }
+};
+const DEFAULT_SUGGEST = { pros: ["更省心", "体验更好", "性价比高", "省时间", "品质有保障"], cons: ["可能踩坑", "需要时间", "开销不小", "有不确定性"] };
+/* 类别识别正则（按顺序匹配，越具体越靠前；中英均可触发，key 用于翻译） */
+const CATEGORIES = [
+  { key: 'drink', re: /咖啡|奶茶|茶|酒|啤酒|果汁|饮料|可乐|气泡|奶盖|咖啡厅|coffee|milk.?tea|tea|beer|juice|cola|drink|wine|bubble/i, sug: CATEGORY_SUGGEST.drink },
+  { key: 'food', re: /吃|饭|餐|面|锅|粉|菜|粥|肉|鸡|鱼|虾|汤|饺|包|饼|麻辣|汉堡|披萨|寿司|烧烤|火锅|甜点|甜品|炸|烤|串|鸭|米线|煲|日料|韩料|泰餐|螺|意大利面|拉面|牛排|沙拉|sushi|pizza|burger|noodle|ramen|steak|salad|barbecue|hotpot|food|meal|dinner|lunch|breakfast/i, sug: CATEGORY_SUGGEST.food },
+  { key: 'buy', re: /买|手机|电脑|耳机|鞋|衣|车|表|相机|家电|家具|笔记本|平板|游戏机|化妆品|护肤|iphone|mac|ipad|buy|laptop|phone|shoe|clothe|car|camera|earphone|wristwatch/i, sug: CATEGORY_SUGGEST.buy },
+  { key: 'ent', re: /看|电影|剧|片|综艺|视频|番|纪录片|小说|书|听|歌|直播|短视频|netflix|movie|film|series|show|anime|stream|watch|video|music|listen/i, sug: CATEGORY_SUGGEST.watch },
+  { key: 'travel', re: /游|旅行|去|逛|出发|度假|徒步|露营|爬山|旅游|踏青|自驾|bali|maldives|japan|thailand|travel|trip|tour|vacation|camping|hiking|resort/i, sug: CATEGORY_SUGGEST.travel },
+  { key: 'sport', re: /运动|健身|跑|游泳|瑜伽|打球|球|骑行|爬山|锻炼|撸铁|篮球|足球|羽毛球|sport|fitness|run|swim|yoga|basketball|football|gym|exercise/i, sug: CATEGORY_SUGGEST.sport },
+  { key: 'study', re: /学|考|课程|书|证|考研|考证|培训|练习|背单词|读书|上课|study|learn|exam|course|book|certificate|train/i, sug: CATEGORY_SUGGEST.study },
+  { key: 'music', re: /音乐|歌|琴|吉他|钢琴|乐器|唱|尤克里里|鼓|music|song|guitar|piano|instrument|sing/i, sug: CATEGORY_SUGGEST.music },
+  { key: 'game', re: /游戏|手游|主机|switch|steam|王者|原神|吃鸡|开黑|cs|吃豆|塞尔达|联机|大世界|playstation|xbox|game|gaming|console/i, sug: CATEGORY_SUGGEST.game },
+  { key: 'live', re: /家|房|租|装|家居|家具|厨具|收纳|打扫|搬家|住|disneyland|universal|house|home|rent|decor|furniture|move/i, sug: CATEGORY_SUGGEST.live }
+];
+/* 优缺点短语的英文翻译（英文界面时对推荐结果本地化） */
+const PHR = {
+  "性能强":"Great performance","拍照好":"Great camera","续航久":"Long battery","系统流畅":"Smooth OS","生态好用":"Great ecosystem",
+  "略贵":"A bit pricey","发热":"Runs warm","换机麻烦":"Migration hassle","容易掉价":"Depreciates fast",
+  "屏幕好":"Great screen","接口多":"Plenty of ports","扩展性强":"Upgradable","生产力高":"Productive","价格高":"Expensive","重量偏大":"Bulky","散热噪音":"Fan noise","占空间":"Takes space",
+  "便携":"Portable","续航长":"Long battery life","性能够用":"Decent performance","颜值高":"Looks great","扩展性一般":"Limited upgrade",
+  "屏幕大":"Large screen","轻便":"Lightweight","看视频爽":"Great for video","记笔记方便":"Great for notes","生产力一般":"Limited productivity","容易吃灰":"Collects dust","系统生态限制":"Ecosystem limits",
+  "音质好":"Great sound","降噪强":"Strong ANC","长时间佩戴舒适":"Comfortable","价格区间大":"Big price range","容易丢":"Easy to lose","续航需充电":"Needs recharging",
+  "看时间方便":"Handy for time","有档次":"Classy","运动监测":"Fitness tracking","健康提醒":"Health alerts","贵":"Expensive","续航一般":"Mediocre battery","生态绑定":"Ecosystem lock-in",
+  "保鲜好":"Great freshness","容量大":"Large capacity","省电":"Energy-saving","静音":"Quiet","占地方":"Space-hungry","价格较高":"Pricey","搬动不便":"Hard to move",
+  "省力":"Effort-saving","洗得干净":"Cleans well","功能多":"Feature-rich","耐用":"Durable","耗水耗电":"Water/electricity heavy","占地":"Takes floor space","安装要求":"Install requirements",
+  "制冷快":"Cools fast","制热也好":"Heats well too","安装便捷":"Easy install","安装麻烦":"Install hassle","电费增加":"Higher bills","外机噪音":"Outdoor noise","滤网需清洁":"Filter cleaning",
+  "大屏":"Big screen","画质好":"Great picture","家庭娱乐":"Family entertainment","追剧爽":"Great for bingeing","玩游戏爽":"Great for gaming","容易积灰":"Collects dust","会员开销":"Subscription cost","伤眼":"Eye strain",
+  "出行自由":"Travel freedom","舒适":"Comfortable","有面子":"Impressive","装载能力强":"Big cargo room","长途方便":"Great for trips","停车难":"Hard to park","养车成本高":"High running cost","堵车糟心":"Traffic frustration","保险油费":"Insurance & fuel",
+  "安居":"Stable home","保值":"Holds value","空间大":"Spacious","按需装修":"Decorate freely","归属感":"Sense of belonging","贷款压力":"Mortgage stress","装修累":"Renovation toil","决策难":"Hard decision","地段纠结":"Location dilemma","物业开销":"HOA fees",
+  "薪资高":"High salary","发展好":"Good growth","氛围好":"Great culture","离家近":"Close to home","能学东西":"Learning opportunity","加班":"Overtime","通勤远":"Long commute","不确定性":"Uncertainty","压力大":"High stress","转行风险":"Career-change risk",
+  "福利好":"Good benefits","平台大":"Big platform","竞争大":"Fierce competition",
+  "提升学历":"Higher degree","深造机会":"Further study","平台更好":"Better platform","自我提升":"Self-growth","时间长":"Takes long","晚就业":"Late career start","落榜风险":"Failure risk",
+  "放松":"Relaxing","开眼界":"Broadens horizons","拍照打卡":"Photo-worthy","换环境充电":"Recharges you","创造回忆":"Makes memories","花钱":"Costly","累":"Tiring","人多":"Crowded","行程折腾":"Rough itinerary",
+  "热闹":"Lively","选择多":"Lots of choice","氛围好":"Great vibe","热气腾腾":"Hot & steamy","排队久":"Long queue","上火":"Easy to get sore throat","味道重":"Strong smell","衣服有味儿":"Clothes smell",
+  "方便":"Convenient","快":"Fast","不用做饭":"No cooking","随时可点":"Order anytime","较贵":"Pricey","不够健康":"Not so healthy","口味不稳定":"Inconsistent taste","配送等餐":"Delivery wait",
+  "香":"Fragrant","气氛好":"Great atmosphere","啤酒配":"Pairs with beer","油烟":"Smoky","排队":"Queueing","卫生参差":"Hygiene varies",
+  "新鲜":"Fresh","清爽":"Light","摆盘精致":"Elegant plating","低油":"Low-oil","偏贵":"Pricey","生冷":"Cold & raw","吃不饱":"Not filling",
+  "芝士香":"Cheesy","方便分享":"Easy to share","口味多":"Many flavors","饱腹":"Filling","高热量":"High-calorie","口味偏西式":"Western taste",
+  "家常味":"Homestyle","荤素均衡":"Balanced","便宜实惠":"Affordable","偏单一":"A bit plain","吃多腻":"Cloying","饭点排队":"Busy at mealtimes",
+  "便宜":"Cheap","热乎":"Hot & fresh","碳水高":"High carbs","营养单一":"One-note nutrition","口味看店":"Quality varies by shop",
+  "解馋":"Satisfies cravings","套餐划算":"Good combo deals","油炸":"Fried","手冲咖啡":"Pour-over coffee",
+  "提神":"Wake-up","香气":"Aromatic","社交氛围":"Social vibe","咖啡因依赖":"Caffeine reliance","影响睡眠":"Affects sleep","易依赖":"Addictive",
+  "好喝":"Tasty","解压":"De-stressing","高糖":"High sugar","发胖":"Weight gain","不便宜":"Not cheap",
+  "治愈":"Therapeutic","好看":"Looks good","拍照好看":"Photogenic","幸福感强":"Feel-good","高糖高脂":"High sugar & fat",
+  "自由搭配":"Customizable","便宜实惠":"Budget-friendly","味道重口过瘾":"Bold flavor kick","偏油":"Oily","偏咸":"Salty","环境一般":"Average setting",
+  "视听享受":"Audio-visual treat","话题多":"Conversation starter","沉浸感":"Immersive","可能踩雷":"Might disappoint","票价不便宜":"Pricey tickets","时间固定":"Fixed timeslot","好片抢票":"Tickets sell out",
+  "社交":"Social","成就感":"Achievement","随时随地":"Play anywhere","伤眼":"Eye strain","易上瘾":"Addictive","占用时间":"Time sink","氪金诱惑":"In-game spending",
+  "身体好":"Better health","减压":"Stress relief","塑形":"Body shaping","增强自信":"Confidence","改善睡眠":"Better sleep","需要坚持":"Needs commitment","可能受伤":"Injury risk","时间成本":"Time cost","花钱办卡":"Gym membership","提高代谢":"Boosts metabolism",
+  "学到东西":"Learn something","充实":"Fulfilling","有目标":"Goal-driven","提升竞争力":"More competitive","可能坚持不下来":"Hard to stick","时间冲突":"Schedule clash",
+  "心情好":"Good mood","展现风格":"Shows style","社交加分":"Social plus","衣柜爆炸":"Closet overload","会过时":"Goes out of style","清洗麻烦":"Hard to clean",
+  "舒服":"Comfortable","百搭":"Versatile","提升气质":"Elevates style","彰显品味":"Shows taste","磨脚风险":"Blister risk","难打理":"Hard to maintain","尺码纠结":"Sizing dilemma",
+  "陪伴":"Companionship","乐趣":"Joy","责任感":"Responsibility","朋友圈素材":"Social content","费精力":"Energy drain","开销":"Expense","责任大":"Big responsibility","卫生打扫":"Cleaning",
+  "记录生活":"Document life","创作":"Creative","可换镜头":"Interchangeable lenses","摄影乐趣":"Photo joy","重":"Heavy","吃灰风险":"Dust risk","学习成本":"Learning curve",
+  "保值":"Retains value","充电慢":"Slow charging","封闭生态":"Closed ecosystem","维修贵":"Costly repair",
+  "系统稳定":"Stable system","流畅":"Smooth","设计精美":"Gorgeous design","软件兼容一般":"Limited software","游戏弱":"Weak gaming",
+  "记笔记/画画爽":"Great for notes/art","生产力有限":"Limited productivity",
+  "合家欢":"Family fun","独占游戏多":"Many exclusives","聚会神器":"Party hit","性能一般":"Modest specs","游戏贵":"Pricey games","手柄漂移":"Stick drift",
+  "画质强":"Great graphics","独占大作":"Big exclusives","手柄体验好":"Great controller","主机+游戏贵":"Console+games costly","联机需会员":"Online needs subscription",
+  "游戏库大":"Huge library","兼容性高":"Great compatibility","独占较逊":"Fewer exclusives","体积大":"Bulky","订阅成本":"Subscription cost",
+  "片源多":"Huge catalog","自制剧精良":"Great originals","无广告":"Ad-free","订阅费":"Subscription fee","部分地区片库少":"Regional gaps","需要网络":"Needs internet",
+  "氛围梦幻":"Dreamy vibes","适合全家":"Family-friendly","回忆感":"Nostalgic","拍照出片":"Photogenic","门票贵":"Pricey tickets",
+  "项目刺激":"Thrilling rides","IP 情怀":"IP nostalgia","体验好":"Great experience","沉浸强":"Very immersive","门票+消费高":"Costly overall",
+  "环境舒适":"Comfy environment","口味稳定":"Consistent","门店多":"Everywhere","社交场合":"Social spot",
+  "稳定解馋":"Reliably satisfying","炸鸡香":"Fragrant fried chicken",
+  "海景美":"Gorgeous sea views","度假氛围":"Resort vibe","性价比高":"Great value","机票住宿开销":"Flight & stay cost","旺季人多":"Crowded in peak","语言沟通":"Language barrier",
+  "顶级海景":"Top-tier sea views","私密度假":"Private retreat","适合蜜月":"Honeymoon-perfect","潜水天堂":"Diving paradise","非常贵":"Very expensive","路途远":"Long travel","时段受限":"Season-limited",
+  "美食多":"Great food","干净安全":"Clean & safe","购物体验好":"Great shopping","四季有景":"Scenery year-round","消费偏高":"Pricey","语言障碍":"Language gap","机酒贵":"Costly flights/hotels",
+  "物价低":"Low cost","美食丰富":"Rich food scene","海岛多":"Many islands","服务热情":"Warm service","交通乱":"Chaotic traffic","季节性闷热":"Seasonal heat",
+  "口感好":"Great texture","酱料多样":"Varied sauces","西餐氛围":"Western vibe","碳水较高":"High carbs","正宗店贵":"Authentic places cost",
+  "汤头香":"Rich broth","偏咸":"A bit salty",
+  "肉香":"Meaty","有仪式感":"Ceremonial","蛋白质":"Protein","火候难控":"Hard to control doneness","胆固醇":"Cholesterol",
+  "轻食健康":"Healthy light meal","低卡":"Low-cal","减脂友好":"Diet-friendly","口味单一":"One-note flavor",
+  "选择超多":"Lots of choice","口味丰富":"Rich flavors","热闹氛围":"Lively","合家欢":"Family-style","油腻可选多":"Many greasy options","热量高":"High calorie",
+  "环境好":"Great environment","适合约会":"Date-ready","分量小":"Small portions","口味看人":"Taste is subjective",
+  "精致":"Refined","清淡健康":"Light & healthy","氛围好":"Great vibe",
+  "下饭":"Appetizing","口味浓":"Rich taste","性价比可以":"Decent value","偏辣":"A bit spicy","口感重复":"Repetitive taste",
+  "提神/解腻":"Refreshing","好喝上头":"Addictive taste","社交氛围好":"Social","选择很多":"Lots of choice","高糖/高咖啡因":"High sugar/caffeine","容易上瘾":"Addictive",
+  "好吃解馋":"Delicious","选择丰富":"Plenty of choice","热乎有氛围":"Warm & atmospheric","方便省事":"Convenient","适合分享":"Shareable","排队/等餐":"Queue/wait","热量/上火":"Calories/heat","长期开销不小":"Cost adds up",
+  "品质可靠":"Reliable quality","用着顺手":"User-friendly","售后省心":"Good after-sales","消费冲动":"Impulse buying","价格偏贵":"A bit pricey","选择太多挑花眼":"Too many choices",
+  "放松解压":"Relaxing","长见识":"Educational","有话题聊":"Chat-worthy","沉浸感强":"Immersive","费时间":"Time-consuming","选择困难":"Decision paralysis",
+  "放松心情":"Relaxes","拍照留念":"Keepsake photos","人多拥挤":"Crowded",
+  "强身健体":"Fitness","减压提神":"De-stressing","塑形好看":"Toning","睡得香":"Better sleep","装备开销":"Gear cost",
+  "提升自己":"Self-improvement","长远价值":"Long-term value","增强竞争力":"Competitive edge","见效慢":"Slow payoff",
+  "陶冶情操":"Cultivates taste","培养气质":"Builds poise","入门难":"Steep start","器材投入":"Gear investment","需要练习时间":"Practice time",
+  "随时可玩":"Play anytime",
+  "提升生活品质":"Better quality of life","住得更舒服":"More comfortable","长期价值":"Long-term worth","开销大":"Big spend","费心费力":"Lots of effort","踩坑风险":"Pitfall risk",
+  "更省心":"Less hassle","体验更好":"Better experience","省时间":"Time-saving","品质有保障":"Guaranteed quality",
+  "可能踩坑":"May backfire","需要时间":"Takes time","开销不小":"Not cheap","有不确定性":"Some uncertainty"
+};
+function locPhrase(s) { return LANG === 'en' ? (PHR[s] != null ? PHR[s] : s) : s; }
+function locPhrases(arr) { return (arr || []).map(locPhrase); }
+function matchSuggest(name) {
+  const nl = name.toLowerCase();
+  // 1) 具体词条：取命中的最长关键词（更精确），大小写不敏感
+  let best = null;
+  for (const k in SUGGEST) {
+    const kl = k.toLowerCase();
+    if (nl.includes(kl) || kl.includes(nl) || name.includes(k) || k.includes(name)) {
+      if (!best || k.length > best.k.length) best = { k, s: SUGGEST[k] };
+    }
+  }
+  if (best) return { pros: locPhrases(best.s.pros), cons: locPhrases(best.s.cons), what: best.k };
+  // 2) 语义类别兜底
+  for (const c of CATEGORIES) if (c.re.test(name)) return { pros: locPhrases(c.sug.pros), cons: locPhrases(c.sug.cons), cat: c.key };
+  return null;
+}
+/* 同步打分表中显示的选项名 */
+function syncScoreNames() {
+  document.querySelectorAll('[data-name-i]').forEach(el => {
+    const k = +el.dataset.nameI;
+    const o = weighOptions[k];
+    el.textContent = o ? (o.name.trim() || t('opt_n', k + 1)) : '';
+  });
+}
+/* 恢复提示条为默认提示 */
+function resetSuggestHint() {
+  const el = document.getElementById('suggest-hint');
+  if (el) { el.textContent = t('suggest_tip'); el.classList.remove('warn'); }
+}
+/* 未填选项名时按了识别键：抖动输入框并提示 */
+function showNeedName(i) {
+  const input = document.querySelector('.opt-name[data-i="' + i + '"]');
+  if (input) {
+    input.classList.add('shake');
+    setTimeout(() => { if (input.classList) input.classList.remove('shake'); }, 400);
+    if (input.focus) input.focus();
+  }
+  const el = document.getElementById('suggest-hint');
+  if (el) { el.textContent = t('suggest_need'); el.classList.add('warn'); }
+}
+/* 按 ✨ 键或回车主动识别并填入优缺点（不再输入时自动识别） */
+function recommendFor(i) {
+  const o = weighOptions[i];
+  if (!o) return;
+  const name = (o.name || '').trim();
+  if (!name) { showNeedName(i); return; }
+  const sug = matchSuggest(name) || { pros: locPhrases(DEFAULT_SUGGEST.pros), cons: locPhrases(DEFAULT_SUGGEST.cons), cat: 'general' };
+  o.pros = sug.pros.slice();
+  o.cons = sug.cons.slice();
+  o.manual = false;
+  showWeighResult = false;
+  document.getElementById('weigh-result').innerHTML = '';
+  showSuggestHint(name, sug.what || t('tag_' + sug.cat), sug.pros.length, sug.cons.length);
+  renderWeigh();
+  // 保持焦点留在名称输入框，方便连续调整
+  const input = document.querySelector('.opt-name[data-i="' + i + '"]');
+  if (input && input.focus) {
+    input.focus();
+    try { input.setSelectionRange(input.value.length, input.value.length); } catch (e) {}
+  }
+}
+/* 语言切换时：仅重新本地化通过 ✨ 识别生成的优缺点（手动编写的保留） */
+function relocSuggestions() {
+  weighOptions.forEach(o => {
+    if (!o || o.manual !== false || !o.name || !o.name.trim()) return;
+    const name = o.name.trim();
+    const sug = matchSuggest(name) || { pros: locPhrases(DEFAULT_SUGGEST.pros), cons: locPhrases(DEFAULT_SUGGEST.cons), cat: 'general' };
+    o.pros = sug.pros.slice();
+    o.cons = sug.cons.slice();
+    o.manual = false;
+    showSuggestHint(name, sug.what || t('tag_' + sug.cat), sug.pros.length, sug.cons.length);
+  });
+}
+function showSuggestHint(name, tag, pn, cn) {
+  const el = document.getElementById('suggest-hint');
+  if (!el) return;
+  el.innerHTML = `${t('suggest_prefix')}<b>${esc(name)}</b> ${t('suggest_mid')} <b>${esc(tag)}</b> → ${t('suggest_auto', pn, cn)}${t('suggest_suffix')}`;
+}
+
+function renderWeigh() {
+  const container = document.getElementById('weigh-cards');
+  container.className = 'cards' + (weighOptions.length === 3 ? ' three' : weighOptions.length === 4 ? ' four' : weighOptions.length >= 5 ? ' six' : '');
+  if (!weighOptions.length) {
+    container.innerHTML = `<div class="weigh-empty">${t('weigh_empty')}</div>`;
+    document.getElementById('weigh-add-opt').style.display = '';
+    document.getElementById('weigh-result').innerHTML = '';
+    renderScoreTable();
+    return;
+  }
+  const scores = weighOptions.map(o => o.pros.filter(x => x.trim()).length - o.cons.filter(x => x.trim()).length);
+  const maxScore = Math.max(...scores);
+  const uniqueMax = scores.filter(s => s === maxScore).length === 1;
+  const winner = uniqueMax ? scores.indexOf(maxScore) : -1;
+
+  container.innerHTML = weighOptions.map((opt, i) => `
+    <div class="card${showWeighResult && winner === i ? ' winner' : ''}">
+      <div class="opt-name-row">
+        <input class="opt-name" data-i="${i}" placeholder="${t('opt_n', i+1)}" value="${esc(opt.name)}" />
+        <button class="suggest-btn" data-suggest-i="${i}" title="${t('suggest_btn_title')}" aria-label="${t('suggest_btn_title')}">✨</button>
+        <button class="del-opt" data-del-i="${i}" title="${t('del_opt_title')}" aria-label="${t('del_opt_title')}">🗑</button>
+      </div>
+      <div class="label-pro">${t('label_pro')}</div>
+      ${opt.pros.map((p, j) => `<div class="list-row"><input data-i="${i}" data-j="${j}" data-field="pros" placeholder="${t('pro_ph')}" value="${esc(p)}" /><button data-i="${i}" data-j="${j}" data-field="pros">x</button></div>`).join('')}
+      <button class="add-btn" data-i="${i}" data-field="pros">${t('add_pro')}</button>
+      <div class="label-con">${t('label_con')}</div>
+      ${opt.cons.map((c, j) => `<div class="list-row"><input data-i="${i}" data-j="${j}" data-field="cons" placeholder="${t('con_ph')}" value="${esc(c)}" /><button data-i="${i}" data-j="${j}" data-field="cons">x</button></div>`).join('')}
+      <button class="add-btn" data-i="${i}" data-field="cons">${t('add_con')}</button>
+      ${showWeighResult ? `<div class="score" style="color:${winner===i?COLORS.gold:COLORS.muted}">${scores[i]>0?'+':''}${scores[i]}</div>` : ''}
+    </div>
+  `).join('');
+
+  // bind events
+  container.querySelectorAll('.opt-name').forEach(el => {
+    const i = +el.dataset.i;
+    el.addEventListener('input', () => {
+      const o = weighOptions[i];
+      if (o) { o.name = el.value; }
+      showWeighResult = false;
+      document.getElementById('weigh-result').innerHTML = '';
+      syncScoreNames();
+    });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); recommendFor(i); } });
+    el.addEventListener('blur', () => {
+      if (!el.isConnected) return;
+      const o = weighOptions[i];
+      if (!o) return;
+      // 删掉项目名后：如果是自动推荐的优缺点，也一并删除
+      if (!o.name.trim() && !o.manual && (o.pros.some(x => x.trim()) || o.cons.some(x => x.trim()))) {
+        o.pros = [""]; o.cons = [""];
+        resetSuggestHint();
+        renderWeigh();
+      }
+    });
+  });
+  container.querySelectorAll('.suggest-btn').forEach(el => {
+    el.addEventListener('click', () => recommendFor(+el.dataset.suggestI));
+  });
+  container.querySelectorAll('.del-opt').forEach(el => {
+    el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); });
+    el.addEventListener('click', () => {
+      weighOptions.splice(+el.dataset.delI, 1);
+      showWeighResult = false;
+      document.getElementById('weigh-result').innerHTML = '';
+      resetSuggestHint();
+      renderWeigh();
+    });
+  });
+  container.querySelectorAll('.list-row input').forEach(el => {
+    el.addEventListener('input', () => { weighOptions[+el.dataset.i][el.dataset.field][+el.dataset.j] = el.value; weighOptions[+el.dataset.i].manual = true; showWeighResult = false; document.getElementById('weigh-result').innerHTML = ''; });
+  });
+  container.querySelectorAll('.list-row button').forEach(el => {
+    el.addEventListener('click', () => {
+      const list = weighOptions[+el.dataset.i][el.dataset.field];
+      list.splice(+el.dataset.j, 1);
+      if (!list.length) list.push("");
+      weighOptions[+el.dataset.i].manual = true;
+      showWeighResult = false;
+      renderWeigh();
+    });
+  });
+  container.querySelectorAll('.add-btn').forEach(el => {
+    el.addEventListener('click', () => { weighOptions[+el.dataset.i][el.dataset.field].push(""); weighOptions[+el.dataset.i].manual = true; renderWeigh(); });
+  });
+
+  document.getElementById('weigh-add-opt').style.display = weighOptions.length >= 6 ? 'none' : '';
+
+  const resultEl = document.getElementById('weigh-result');
+  if (showWeighResult && winner >= 0) {
+    const nm = weighOptions[winner].name.trim() || t('opt_n', winner+1);
+    resultEl.innerHTML = `<div class="weigh-result">${esc(nm)} ${t('weigh_win_suffix')}</div>`;
+  } else if (showWeighResult) {
+    resultEl.innerHTML = `<div class="weigh-tie">${t('weigh_tie')}</div>`;
+  } else {
+    resultEl.innerHTML = '';
+  }
+
+  renderScoreTable();
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function c15(v) { v = parseInt(v, 10); if (isNaN(v)) return 3; return Math.min(5, Math.max(1, v)); }
+function scoreTotals() {
+  return weighOptions.map(o => scoreCrits.reduce((s, c, j) => s + c15(o.scores[j]) * c15(c.w), 0));
+}
+function updateScoreResult() {
+  const totals = scoreTotals();
+  const maxV = Math.max(...totals);
+  const unique = totals.filter(t => t === maxV).length === 1;
+  const win = unique ? totals.indexOf(maxV) : -1;
+  document.querySelectorAll('[data-total]').forEach(el => {
+    const i = +el.dataset.total;
+    el.textContent = totals[i];
+    el.className = 'score-tot' + (i === win ? '' : ' low');
+  });
+  const res = document.getElementById('score-result');
+  if (win >= 0 && weighOptions.length) {
+    const nm = weighOptions[win].name.trim();
+    res.innerHTML = `🏆 ${esc(nm || t('opt_n', win + 1))} ${t('score_lead', maxV)}`;
+    res.style.color = COLORS.gold;
+  } else {
+    res.textContent = t('score_hint');
+    res.style.color = COLORS.muted;
+  }
+}
+function renderScoreTable() {
+  weighOptions.forEach(o => { if (!Array.isArray(o.scores)) o.scores = []; while (o.scores.length < scoreCrits.length) o.scores.push(3); o.scores.length = scoreCrits.length; });
+  const wrap = document.getElementById('score-table-wrap');
+  wrap.innerHTML = `
+  <table class="score-table" id="score-table">
+    <thead><tr>
+      <th>${t('opt_col')}</th>
+      ${scoreCrits.map((c, i) => `<th><div class="score-crit-cell">
+        <input data-k="crit-name" data-i="${i}" placeholder="${t('crit_n', i + 1)}" value="${esc(c.name)}" />
+        <div class="score-crit-meta">${t('weight')}<input class="num" type="number" min="1" max="5" data-k="crit-w" data-i="${i}" value="${c.w}" /><button data-k="crit-del" data-i="${i}" ${scoreCrits.length <= 1 ? 'disabled' : ''}>×</button></div>
+      </div></th>`).join('')}
+      <th>${t('total')}</th>
+    </tr></thead>
+    <tbody>
+      ${weighOptions.map((o, i) => `<tr data-row="${i}">
+        <td><div class="opt-cell"><span class="score-opt-name" data-name-i="${i}">${esc(o.name.trim() || t('opt_n', i + 1))}</span></div></td>
+        ${o.scores.map((s, j) => `<td><input class="num" type="number" min="1" max="5" data-k="score" data-i="${i}" data-j="${j}" value="${s}" /></td>`).join('')}
+        <td><div class="score-tot low" data-total="${i}">0</div></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+  wrap.querySelectorAll('input').forEach(el => {
+    const k = el.dataset.k, i = +el.dataset.i;
+    const apply = () => {
+      if (k === 'crit-name') scoreCrits[i].name = el.value;
+      else if (k === 'score') { const v = parseInt(el.value, 10); if (!isNaN(v)) weighOptions[i].scores[+el.dataset.j] = c15(v); }
+      else if (k === 'crit-w') { const v = parseInt(el.value, 10); if (!isNaN(v)) scoreCrits[i].w = c15(v); }
+      updateScoreResult();
+    };
+    el.addEventListener('input', apply);
+    el.addEventListener('blur', () => {
+      if (k === 'score') { weighOptions[i].scores[+el.dataset.j] = c15(el.value); el.value = weighOptions[i].scores[+el.dataset.j]; }
+      if (k === 'crit-w') { scoreCrits[i].w = c15(el.value); el.value = scoreCrits[i].w; }
+    });
+  });
+  wrap.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+    const k = btn.dataset.k, i = +btn.dataset.i;
+    if (k === 'crit-del' && scoreCrits.length > 1) { scoreCrits.splice(i, 1); renderScoreTable(); }
+  }));
+  updateScoreResult();
+}
+
+document.getElementById('weigh-add-opt').addEventListener('click', () => {
+  if (weighOptions.length < 6) { weighOptions.push({ name:"", pros:[""], cons:[""], scores: scoreCrits.map(() => 3) }); showWeighResult = false; renderWeigh(); }
+});
+document.getElementById('weigh-btn').addEventListener('click', () => { showWeighResult = true; renderWeigh(); });
+document.getElementById('score-add-crit').addEventListener('click', () => {
+  if (scoreCrits.length < 5) { scoreCrits.push({ name: '', w: 3 }); renderScoreTable(); }
+});
+function renderDeckSelect() {
+  const sel = document.getElementById('import-deck');
+  if (!sel) return;
+  sel.innerHTML = wheelDecks.map((d, i) => `<option value="${i}" ${i === activeDeck ? 'selected' : ''}>${esc(d.name)}（${d.items.length}）</option>`).join('');
+}
+document.getElementById('import-from-wheel').addEventListener('click', () => {
+  const sel = document.getElementById('import-deck');
+  const di = sel && sel.value !== '' ? +sel.value : activeDeck;
+  const items = (wheelDecks[di] || wheelDecks[activeDeck]).items.slice(0, 6);
+  if (!items.length) { document.getElementById('weigh-result').innerHTML = `<div class="weigh-tie">${t('import_empty')}</div>`; return; }
+  weighOptions = items.map(it => ({ name: it, pros: [""], cons: [""], scores: scoreCrits.map(() => 3) }));
+  showWeighResult = false;
+  resetSuggestHint();
+  renderWeigh();
+});
+renderWeigh();
+renderDeckSelect();
+
+/* ---- SHUFFLE ---- */
+let shuffleCat = "eat";
+let shuffling = false;
+const catKeys = ["eat", "watch", "do", "wear"];
+const catQs = { eat:"shuffle_q_eat", watch:"shuffle_q_watch", do:"shuffle_q_do", wear:"shuffle_q_wear" };
+let customDaily = { eat:[], watch:[], do:[], wear:[] };
+function catCount(k) { return DAILY[k].length + customDaily[k].length; }
+function poolFor(k) { return DAILY[k].concat(customDaily[k]); }
+
+function renderCats() {
+  document.getElementById('cat-btns').innerHTML = catKeys.map(k =>
+    `<button class="cat-btn${k===shuffleCat?' active':''}" data-cat="${k}">${t('cat_'+k)}(<b>${catCount(k)}</b>)</button>`
+  ).join('');
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => { shuffleCat = btn.dataset.cat; renderCats(); renderCustomChips(); setShuffleHint(); });
+  });
+  updatePoolToggle();
+  setShuffleHint();
+}
+function setShuffleHint() {
+  const disp = document.getElementById('shuffle-display');
+  const empty = disp.querySelector('.shuffle-empty');
+  if (empty) empty.textContent = t(catQs[shuffleCat]);
+}
+function updatePoolToggle() {
+  const el = document.getElementById('pool-toggle');
+  if (el) el.textContent = t('pool_toggle', poolFor(shuffleCat).length);
+}
+function renderPoolPanel() {
+  const list = poolFor(shuffleCat);
+  document.getElementById('pool-toggle').textContent = t('pool_toggle', list.length);
+  document.getElementById('pool-chips').innerHTML = list.map(it => `<span class="chip">${esc(it)}</span>`).join('');
+}
+function renderCustomChips() {
+  const el = document.getElementById('custom-chips');
+  const list = customDaily[shuffleCat];
+  el.innerHTML = list.map((item, i) => `<span class="chip">${esc(item)}<button data-idx="${i}">x</button></span>`).join('');
+  el.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => { customDaily[shuffleCat].splice(+btn.dataset.idx, 1); renderCustomChips(); renderCats(); }));
+  document.getElementById('custom-reset').hidden = !list.length;
+  document.getElementById('custom-input').placeholder = t('custom_ph', t('cat_'+shuffleCat));
+}
+function addCustom() {
+  const input = document.getElementById('custom-input');
+  const v = input.value.trim();
+  input.value = '';
+  if (!v || customDaily[shuffleCat].includes(v)) return;
+  customDaily[shuffleCat].push(v);
+  renderCustomChips();
+  renderCats();
+}
+document.getElementById('custom-add').addEventListener('click', addCustom);
+document.getElementById('custom-input').addEventListener('keydown', e => { if (e.key === 'Enter') addCustom(); });
+document.getElementById('custom-reset').addEventListener('click', () => { customDaily[shuffleCat] = []; renderCustomChips(); renderCats(); });
+document.getElementById('pool-toggle').addEventListener('click', () => {
+  const p = document.getElementById('pool-panel');
+  p.hidden = !p.hidden;
+  if (!p.hidden) { renderPoolPanel(); p.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+});
+document.getElementById('pool-to-wheel').addEventListener('click', () => {
+  const list = poolFor(shuffleCat);
+  const cur = wheelDecks[activeDeck].items;
+  let added = 0;
+  list.forEach(it => { if (!cur.includes(it)) { cur.push(it); added++; } });
+  renderPoolPanel(); renderChips(); drawWheel(wheelAngle); renderDecks(); renderDeckSelect();
+  document.getElementById('pool-status').textContent = added ? t('pool_added', added, wheelDecks[activeDeck].name) : t('pool_dup', wheelDecks[activeDeck].name);
+});
+
+document.getElementById('shuffle-btn').addEventListener('click', () => {
+  if (shuffling) return;
+  shuffling = true;
+  const btn = document.getElementById('shuffle-btn');
+  btn.disabled = true;
+  btn.textContent = t('shuffling');
+  const pool = poolFor(shuffleCat);
+  let count = 0;
+  const interval = setInterval(() => {
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    document.getElementById('shuffle-display').innerHTML = `<div class="shuffle-pick">${esc(pick)}</div>`;
+    count++;
+    if (count > 12) {
+      clearInterval(interval);
+      shuffling = false;
+      btn.disabled = false;
+      btn.textContent = t('shuffle_btn');
+      const p = document.querySelector('.shuffle-pick');
+      if (p) { p.classList.add('flash'); setTimeout(() => { if (p.classList) p.classList.remove('flash'); }, 600); }
+    }
+  }, 80);
+});
+renderCats();
+renderCustomChips();
+
+/* ---- FATE (骰子 / 是非 / 签语) ---- */
+function fateList(kind) { return (LANG === 'en' ? (kind === 'yesno' ? YESNO.en : FORTUNE.en) : (kind === 'yesno' ? YESNO.zh : FORTUNE.zh)); }
+let fateMode = "dice";
+let fateCount = 1;
+let fateRolling = false;
+function newRoll() { return Array.from({ length: fateCount }, () => 1 + Math.floor(Math.random() * 6)); }
+const PIPS = {
+  1: [[1,1]], 2: [[0,0],[2,2]], 3: [[0,0],[1,1],[2,2]],
+  4: [[0,0],[0,2],[2,0],[2,2]], 5: [[0,0],[0,2],[1,1],[2,0],[2,2]],
+  6: [[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]]
+};
+function faceRot(d) {
+  return {
+    1: 'rotateX(0deg) rotateY(0deg)', 2: 'rotateX(-90deg) rotateY(0deg)',
+    3: 'rotateY(-90deg)', 4: 'rotateY(90deg)', 5: 'rotateX(90deg)', 6: 'rotateY(180deg)'
+  }[d];
+}
+function facePipsHtml(d) {
+  return PIPS[d].map(p => `<i class="pip" style="grid-area:${p[1]+1}/${p[0]+1}"></i>`).join('');
+}
+function buildDice(count) {
+  let slots = '';
+  for (let i = 0; i < count; i++) {
+    let faces = '';
+    for (let d = 1; d <= 6; d++) faces += `<div class="die-face f${d}">${facePipsHtml(d)}</div>`;
+    slots += `<div class="die-slot"><div class="die-cube">${faces}</div></div>`;
+  }
+  return `<div class="fate-wrap"><div class="fate-dice">${slots}</div><div class="fate-total">${LANG === 'en' ? 'Total —' : '总点数 —'}</div></div>`;
+}
+function startDiceTumble(disp) {
+  if (!disp || !disp.querySelectorAll) return;
+  const cubes = disp.querySelectorAll('.die-cube');
+  for (let i = 0; i < cubes.length; i++) {
+    const cube = cubes[i];
+    if (!cube || !cube.animate) continue;
+    cube.animate([
+      { transform: 'rotateX(0deg) rotateY(0deg) rotateZ(0deg)' },
+      { transform: 'rotateX(540deg) rotateY(720deg) rotateZ(180deg)' }
+    ], { duration: 1100 + i * 120, iterations: Infinity, easing: 'linear' });
+  }
+}
+function landDice(disp, results) {
+  if (!disp || !disp.querySelectorAll) return;
+  const slots = disp.querySelectorAll('.die-slot');
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+    if (!slot) continue;
+    const cube = slot.querySelector('.die-cube');
+    const d = results[i] || 1;
+    const target = `rotateX(-12deg) rotateY(20deg) ${faceRot(d)}`;
+    let from = 'rotateX(0deg) rotateY(0deg)';
+    try {
+      const cs = typeof getComputedStyle === 'function' ? getComputedStyle(cube).transform : '';
+      if (cs && cs !== 'none') from = cs;
+    } catch (e) {}
+    if (cube && cube.getAnimations) cube.getAnimations().forEach(a => a.cancel());
+    if (cube && cube.animate) {
+      cube.animate([{ transform: from }, { transform: target }], {
+        duration: 760, delay: i * 90, easing: 'cubic-bezier(.2,.9,.25,1.22)', fill: 'forwards'
+      });
+    } else if (cube) cube.style.transform = target;
+    if (slot.animate) {
+      slot.animate([
+        { transform: 'scale(1,1)', offset: 0 },
+        { transform: 'scale(1.18,.82) translateY(4px)', offset: .3 },
+        { transform: 'scale(.9,1.1) translateY(-7px)', offset: .55 },
+        { transform: 'scale(1.04,.96)', offset: .8 },
+        { transform: 'scale(1,1)', offset: 1 }
+      ], { duration: 540, delay: i * 90 + 600, easing: 'ease-out' });
+    }
+  }
+  const tl = disp.querySelector('.fate-total');
+  if (tl) tl.textContent = t('fate_total', results.reduce((a, b) => a + b, 0));
+}
+function renderFate() {
+  document.querySelectorAll('#fate-btns .cat-btn').forEach(b => { b.classList.toggle('active', b.dataset.fate === fateMode); b.textContent = t('fate_' + b.dataset.fate); });
+  document.getElementById('fate-opts').style.display = fateMode === 'dice' ? '' : 'none';
+  const btn = document.getElementById('fate-btn');
+  btn.textContent = fateMode === 'dice' ? t('fate_roll') : fateMode === 'yesno' ? t('fate_ask') : t('fate_draw');
+  document.getElementById('fate-count').previousSibling; // noop
+  if (!fateRolling) {
+    document.getElementById('fate-display').innerHTML = `<div class="shuffle-empty">${fateMode === 'dice' ? t('fate_hint_dice') : fateMode === 'yesno' ? t('fate_hint_yesno') : t('fate_hint_fortune')}</div>`;
+  }
+}
+function fateRoll() {
+  if (fateRolling) return;
+  fateRolling = true;
+  const btn = document.getElementById('fate-btn');
+  btn.disabled = true;
+  btn.textContent = fateMode === 'dice' ? t('fate_rolling_dice') : fateMode === 'yesno' ? t('fate_rolling_yesno') : t('fate_rolling_fortune');
+  const disp = document.getElementById('fate-display');
+  if (fateMode === 'dice') {
+    disp.innerHTML = buildDice(fateCount);
+    startDiceTumble(disp);
+  }
+  let count = 0;
+  const interval = setInterval(() => {
+    if (fateMode !== 'dice') {
+      const pool = fateList(fateMode);
+      disp.innerHTML = `<div class="shuffle-pick">${esc(pool[Math.floor(Math.random() * pool.length)])}</div>`;
+    }
+    count++;
+    if (count > 13) {
+      clearInterval(interval);
+      fateRolling = false;
+      btn.disabled = false;
+      btn.textContent = fateMode === 'dice' ? t('fate_again_dice') : t('fate_again');
+      if (fateMode === 'dice') {
+        landDice(disp, newRoll());
+      } else {
+        const pool = fateList(fateMode);
+        disp.innerHTML = `<div class="shuffle-pick">${esc(pool[Math.floor(Math.random() * pool.length)])}</div>`;
+        const p = disp.querySelector('.shuffle-pick');
+        if (p) { p.classList.add('flash'); setTimeout(() => { if (p.classList) p.classList.remove('flash'); }, 600); }
+      }
+    }
+  }, 80);
+}
+document.querySelectorAll('#fate-btns .cat-btn').forEach(btn => btn.addEventListener('click', () => { fateMode = btn.dataset.fate; renderFate(); }));
+document.getElementById('fate-count').addEventListener('input', e => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) fateCount = Math.min(3, Math.max(1, v)); });
+document.getElementById('fate-btn').addEventListener('click', fateRoll);
+renderFate();
+
+/* ---- VERSUS (淘汰赛) ---- */
+let vsItems = [];
+let vsPairs = [];
+let vsWinners = [];
+let vsRound = 1;
+let vsBye = null;
+let vsDone = false;
+let vsActive = false;
+
+function addVsItem() {
+  const input = document.getElementById('vs-input');
+  const v = input.value.trim();
+  input.value = '';
+  if (!v) return;
+  if (vsItems.includes(v)) {
+    document.getElementById('vs-empty').textContent = t('vs_dup', v);
+    return;
+  }
+  vsItems.push(v);
+  vsReset(true);
+  renderVsChips();
+}
+function vsReset(keepItems) {
+  if (!keepItems) vsItems = [];
+  vsPairs = []; vsWinners = []; vsRound = 1; vsBye = null; vsDone = false; vsActive = false;
+  renderVsStage();
+}
+function startVs() {
+  if (vsItems.length < 2) { document.getElementById('vs-empty').textContent = t('vs_need2'); return; }
+  const pool = vsItems.slice().sort(() => Math.random() - 0.5);
+  vsDone = false; vsActive = true; vsRound = 1;
+  buildRound(pool);
+}
+function buildRound(pool) {
+  vsPairs = []; vsWinners = []; vsBye = null;
+  for (let i = 0; i + 1 < pool.length; i += 2) vsPairs.push([pool[i], pool[i + 1]]);
+  if (pool.length % 2 === 1) vsBye = pool[pool.length - 1];
+  renderVsStage();
+}
+function pickVs(win) {
+  vsWinners.push(win);
+  vsPairs.shift();
+  if (!vsPairs.length) {
+    if (vsBye != null) { vsWinners.push(vsBye); vsBye = null; }
+    if (vsWinners.length === 1) { vsDone = true; vsActive = false; }
+    else { vsRound++; buildRound(vsWinners.slice()); return; }
+  }
+  renderVsStage();
+}
+function renderVsStage() {
+  const stage = document.getElementById('vs-stage');
+  const empty = document.getElementById('vs-empty');
+  const actions = document.getElementById('vs-actions');
+  const startBtn = document.getElementById('vs-start');
+  if (!vsActive && !vsDone) {
+    empty.style.display = '';
+    actions.style.display = '';
+    stage.style.display = 'none';
+    startBtn.textContent = t('vs_start');
+    empty.textContent = vsItems.length < 2 ? t('vs_need2') : t('vs_added', vsItems.length);
+    return;
+  }
+  empty.style.display = 'none';
+  actions.style.display = vsActive ? 'none' : '';
+  startBtn.textContent = vsDone ? t('vs_again') : t('vs_start');
+  stage.style.display = '';
+  if (vsDone) {
+    stage.innerHTML = `<div class="vs-win">🏆 ${esc(vsWinners[0])}</div><div class="vs-sub">${t('vs_sub')}</div>`;
+    return;
+  }
+  const pair = vsPairs[0];
+  stage.innerHTML = `<div class="vs-round">${t('vs_round', vsRound, vsPairs.length + (vsBye != null ? 1 : 0))}</div>
+    <div class="vs-hint">${t('vs_hint')}</div>
+    ${vsBye != null ? `<div class="vs-bye">${t('vs_bye', esc(vsBye))}</div>` : ''}
+    <div class="vs-duel">
+      <button class="vs-card" data-side="0">${esc(pair[0])}</button>
+      <button class="vs-card" data-side="1">${esc(pair[1])}</button>
+    </div>`;
+  stage.querySelectorAll('.vs-card').forEach(btn => btn.addEventListener('click', () => pickVs(vsPairs[0][+btn.dataset.side])));
+}
+function renderVsChips() {
+  const el = document.getElementById('vs-chips');
+  el.innerHTML = vsItems.map((item, i) => `<span class="chip">${esc(item)}<button data-idx="${i}">x</button></span>`).join('');
+  el.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => { vsItems.splice(+btn.dataset.idx, 1); vsReset(true); renderVsChips(); }));
+}
+document.getElementById('vs-add').addEventListener('click', addVsItem);
+document.getElementById('vs-input').addEventListener('keydown', e => { if (e.key === 'Enter') addVsItem(); });
+document.getElementById('vs-start').addEventListener('click', startVs);
+document.getElementById('vs-clear').addEventListener('click', () => { vsReset(false); renderVsChips(); });
+let vsPickSize = 8;
+document.getElementById('vs-size').addEventListener('click', () => {
+  vsPickSize = vsPickSize === 4 ? 8 : vsPickSize === 8 ? 16 : 4;
+  document.getElementById('vs-size').textContent = t('vs_size', vsPickSize);
+});
+document.getElementById('vs-size').textContent = t('vs_size', vsPickSize);
+document.getElementById('vs-auto').addEventListener('click', () => {
+  const pool = poolFor(shuffleCat);
+  if (pool.length < 2) { document.getElementById('vs-empty').textContent = t('vs_too_few'); renderVsStage(); return; }
+  const take = Math.min(vsPickSize, pool.length);
+  vsItems = pool.slice().sort(() => Math.random() - 0.5).slice(0, take);
+  vsReset(true);
+  renderVsChips();
+  startVs();
+});
+renderVsChips();
+renderVsStage();
+
+/* ---- RECORDS ---- */
+const REC_KEY = 'justpick_records';
+
+function stateToJSON() {
+  const q = document.getElementById('weigh-q').value.trim();
+  return JSON.stringify({
+    v: 1,
+    decks: wheelDecks.map(d => ({ n: d.name, items: d.items.slice() })),
+    activeDeck,
+    q,
+    weigh: JSON.parse(JSON.stringify(weighOptions)),
+    cat: shuffleCat,
+    vs: vsItems.slice(),
+    cust: JSON.parse(JSON.stringify(customDaily)),
+    scCrits: scoreCrits.map(c => ({ n: c.name, w: c.w }))
+  });
+}
+function encodeRecord() {
+  let bin = '';
+  new TextEncoder().encode(stateToJSON()).forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin);
+}
+function decodeRecord(code) {
+  const bin = atob(code.replace(/\s+/g, ''));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function applyRecord(data) {
+  if (!data || data.v !== 1) throw new Error('bad format');
+  if (Array.isArray(data.decks) && data.decks.length) {
+    wheelDecks = data.decks.map(d => ({
+      name: String((d && d.n) || '转盘'),
+      items: (Array.isArray(d && d.items) ? d.items : []).filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean)
+    }));
+    if (!wheelDecks.length) wheelDecks = [{ name: '转盘 1', items: [] }];
+    activeDeck = Math.min(Math.max(0, +data.activeDeck || 0), wheelDecks.length - 1);
+    wheelItems = wheelDecks[activeDeck].items;
+  } else if (Array.isArray(data.wheel)) {
+    // 旧记录码：单转盘
+    const items = data.wheel.filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean);
+    wheelDecks = [{ name: '转盘 1', items: items.length ? items : [] }];
+    activeDeck = 0;
+    wheelItems = wheelDecks[0].items;
+  }
+  if (typeof data.q === 'string') document.getElementById('weigh-q').value = data.q;
+  if (Array.isArray(data.weigh) && data.weigh.length) {
+    weighOptions = data.weigh.map(o => ({
+      name: o && typeof o.name === 'string' ? o.name : '',
+      pros: Array.isArray(o.pros) && o.pros.length ? o.pros.map(String) : [""],
+      cons: Array.isArray(o.cons) && o.cons.length ? o.cons.map(String) : [""],
+      scores: Array.isArray(o && o.scores) ? o.scores.slice(0, 5).map(x => c15(x)) : [],
+      manual: !!(o && o.manual)
+    }));
+  }
+  if (data.cat && catQs[data.cat]) shuffleCat = data.cat;
+  if (Array.isArray(data.vs)) {
+    const vs = data.vs.filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean);
+    if (vs.length) vsItems = vs;
+    vsReset(true);
+    renderVsChips();
+  }
+  if ((data.scCrits && Array.isArray(data.scCrits) && data.scCrits.length) || (data.sc && Array.isArray(data.sc.crits) && data.sc.crits.length)) {
+    const crits = (data.scCrits && data.scCrits.length) ? data.scCrits : data.sc.crits;
+    scoreCrits = crits.slice(0, 5).map(c => ({ name: String((c && c.n) || ''), w: c15(parseInt(c && c.w, 10) || 3) }));
+  }
+  // 兼容旧记录码：若 weigh 没有 scores，回退到旧的 sc.opts
+  if (data.sc && Array.isArray(data.sc.opts)) {
+    weighOptions.forEach((o, i) => {
+      const old = data.sc.opts[i];
+      if ((!o.scores || !o.scores.length) && old && Array.isArray(old.s)) o.scores = old.s.slice(0, 5).map(x => c15(x));
+    });
+  }
+  if (data.cust && typeof data.cust === 'object') {
+    Object.keys(customDaily).forEach(k => {
+      if (Array.isArray(data.cust[k])) {
+        const arr = data.cust[k].filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean);
+        if (arr.length) customDaily[k] = arr;
+      }
+    });
+  }
+  showWeighResult = false;
+  document.getElementById('spin-result').innerHTML = '';
+  document.getElementById('weigh-result').innerHTML = '';
+  renderChips();
+  drawWheel(wheelAngle);
+  renderDecks();
+  renderDeckSelect();
+  renderWeigh();
+  renderCats();
+  renderCustomChips();
+}
+function recordMsg(text, ok) {
+  const el = document.getElementById('record-msg');
+  el.textContent = text;
+  el.className = 'record-msg ' + (ok ? 'ok' : 'err');
+}
+function copyText(t) {
+  const done = () => recordMsg(t('rec_copied'), true);
+  const fail = () => {
+    const ta = document.createElement('textarea');
+    ta.value = t;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    recordMsg(ok ? t('rec_copied') : t('rec_copy_fail'), ok);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fail);
+  else fail();
+}
+function getHistory() { try { return JSON.parse(localStorage.getItem(REC_KEY)) || []; } catch (e) { return []; } }
+function setHistory(h) { try { localStorage.setItem(REC_KEY, JSON.stringify(h)); } catch (e) {} }
+function fmtTime(t) {
+  const d = new Date(t), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function renderHistory() {
+  const list = document.getElementById('record-list');
+  const wrap = document.getElementById('record-hist');
+  const h = getHistory();
+  document.getElementById('record-count').textContent = h.length ? `（${h.length}）` : '';
+  wrap.hidden = !h.length;
+  list.innerHTML = h.map((e, i) => `
+    <div class="record-item">
+      <div class="record-meta"><span>${fmtTime(e.t)}</span><span>${esc(e.s || '')}</span></div>
+      <code class="record-code-sm">${esc(e.code.slice(0, 20))}${e.code.length > 20 ? '…' : ''}</code>
+      <div class="record-acts">
+        <button data-act="load" data-i="${i}">${t('rec_load')}</button>
+        <button data-act="del" data-i="${i}">${t('rec_clear')}</button>
+      </div>
+    </div>`).join('');
+  list.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const h2 = getHistory();
+      const item = h2[+btn.dataset.i];
+      if (!item) return;
+      if (btn.dataset.act === 'load') {
+        try {
+          applyRecord(decodeRecord(item.code));
+          document.getElementById('record-input').value = item.code;
+          recordMsg(t('rec_ok'), true);
+        } catch (e) { recordMsg(t('rec_broken'), false); }
+      } else {
+        h2.splice(+btn.dataset.i, 1);
+        setHistory(h2);
+        renderHistory();
+      }
+    });
+  });
+}
+function pushHistory(entry) {
+  entry.t = Date.now();
+  const h = getHistory();
+  h.unshift(entry);
+  setHistory(h.slice(0, 30));
+}
+document.getElementById('record-save').addEventListener('click', () => {
+  const code = encodeRecord();
+  document.getElementById('record-code').textContent = code;
+  document.getElementById('record-box').hidden = false;
+  document.getElementById('record-box').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  recordMsg('', true);
+  const q = document.getElementById('weigh-q').value.trim();
+  const parts = [t('rec_summary_wheel', wheelItems.length)];
+  if (vsItems.length) parts.push(t('rec_summary_vs', vsItems.length));
+  const customs = Object.values(customDaily).reduce((s, a) => s + a.length, 0);
+  if (customs) parts.push(t('rec_summary_custom', customs));
+  if (q) parts.push(q.length > 8 ? q.slice(0, 8) + '…' : q);
+  pushHistory({ code, s: parts.join(' · ') });
+  renderHistory();
+});
+document.getElementById('record-copy').addEventListener('click', () => copyText(document.getElementById('record-code').textContent));
+document.getElementById('record-close').addEventListener('click', () => { document.getElementById('record-box').hidden = true; });
+document.getElementById('record-clear').addEventListener('click', () => {
+  if (getHistory().length && confirm(t('rec_confirm_clear'))) { setHistory([]); renderHistory(); }
+});
+function loadFromInput() {
+  const code = document.getElementById('record-input').value.trim();
+  if (!code) { recordMsg(t('rec_need'), false); return; }
+  try {
+    applyRecord(decodeRecord(code));
+    recordMsg(t('rec_ok'), true);
+  } catch (e) { recordMsg(t('rec_bad'), false); }
+}
+document.getElementById('record-load').addEventListener('click', loadFromInput);
+document.getElementById('record-input').addEventListener('keydown', e => { if (e.key === 'Enter') loadFromInput(); });
+renderHistory();
+
+/* ===== PWA：注册 Service Worker，实现离线可用 ===== */
+(function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;          // 仅在 HTTPS / localhost 下可用
+  if (location.protocol === 'file:') return;            // 直接双击本地文件时不注册
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function (err) {
+      console.warn('Service Worker 注册失败：', err);
+    });
+  });
+  // 提示可安装为主屏幕 App（浏览器弹出安装提示时）
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log('PWA 可安装');
+  });
+})();
+/* ===== PWA 结束 ===== */
+</script>
+</body>
+</html>

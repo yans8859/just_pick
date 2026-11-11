@@ -1,0 +1,7 @@
+# 以下文件仅用于本地运行或查阅，不上传到 GitHub Pages / 不打包进 APK
+serve.js
+start-app.bat
+make_icons.py
+使用与安装指南.md
+GitHub-Pages打包APK步骤.md
+*.py

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="104" fill="#15152c"/>
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd76e"/>
+      <stop offset="1" stop-color="#E8C547"/>
+    </linearGradient>
+  </defs>
+  <!-- 转盘环 -->
+  <g transform="translate(256,256)">
+    <circle r="200" fill="none" stroke="url(#g1)" stroke-width="34"/>
+    <circle r="168" fill="#24244a" stroke="#32325c" stroke-width="8"/>
+    <!-- 扇区 -->
+    <g stroke="#15152c" stroke-width="6">
+      <path d="M0,0 L0,-168 A168,168 0 0 1 118.8,-118.8 Z" fill="#7B68EE"/>
+      <path d="M0,0 L118.8,-118.8 A168,168 0 0 1 168,0 Z" fill="#E85D75"/>
+      <path d="M0,0 L168,0 A168,168 0 0 1 118.8,118.8 Z" fill="#4ECDC4"/>
+      <path d="M0,0 L118.8,118.8 A168,168 0 0 1 0,168 Z" fill="#E8C547"/>
+      <path d="M0,0 L0,168 A168,168 0 0 1 -118.8,118.8 Z" fill="#FF8A5C"/>
+      <path d="M0,0 L-118.8,118.8 A168,168 0 0 1 -168,0 Z" fill="#A88BEB"/>
+      <path d="M0,0 L-168,0 A168,168 0 0 1 -118.8,-118.8 Z" fill="#56C596"/>
+      <path d="M0,0 L-118.8,-118.8 A168,168 0 0 1 0,-168 Z" fill="#3D5A99"/>
+    </g>
+    <!-- 中心圆钮 -->
+    <circle r="34" fill="#1a1a2e" stroke="url(#g1)" stroke-width="8"/>
+    <circle r="14" fill="#ffd76e"/>
+  </g>
+  <!-- 顶部指针 -->
+  <polygon points="256,22 266,62 246,62" fill="#ffd76e"/>
+</svg>
